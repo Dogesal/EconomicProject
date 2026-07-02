@@ -1,7 +1,15 @@
+<script>
+// Module scope: survives layout remounts within the same page load, so the
+// cold-start relock fires exactly once per real app launch (not every time
+// the user comes back from the lock screen).
+let bootRelockHandled = false;
+</script>
+
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import ToastNotification from '@/Components/ToastNotification.vue';
+import { isNativeApp } from '@/native/bridge';
 
 const page = usePage();
 const currentPath = computed(() => new URL(page.props.ziggy?.location ?? window.location.href).pathname);
@@ -28,6 +36,16 @@ const loading = ref(false);
 let delayTimer = null;
 const cleanups = [];
 
+// App lock lifecycle: the middleware only runs on HTTP requests, but Android
+// resumes the webview without navigating, so the lock must be re-engaged
+// from the client on cold start and when returning from background.
+const RESUME_GRACE_MS = 30000;
+let hiddenAt = null;
+
+const relock = () => router.post('/lock/relock', {}, { preserveScroll: false });
+
+const shouldGuard = () => page.props.appLockEnabled && isNativeApp();
+
 onMounted(() => {
     cleanups.push(
         router.on('start', (event) => {
@@ -43,6 +61,27 @@ onMounted(() => {
             loading.value = false;
         }),
     );
+
+    if (!bootRelockHandled) {
+        bootRelockHandled = true;
+        if (shouldGuard()) {
+            relock();
+        }
+    }
+
+    const onVisibilityChange = () => {
+        if (document.hidden) {
+            hiddenAt = Date.now();
+            return;
+        }
+
+        if (shouldGuard() && hiddenAt !== null && Date.now() - hiddenAt > RESUME_GRACE_MS) {
+            relock();
+        }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    cleanups.push(() => document.removeEventListener('visibilitychange', onVisibilityChange));
 });
 
 onUnmounted(() => {

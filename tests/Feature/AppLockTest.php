@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Domain\Models\Account;
+use App\Domain\Models\Setting;
 use App\Support\AppLock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AppLockTest extends TestCase
@@ -56,5 +58,99 @@ class AppLockTest extends TestCase
 
         $this->assertFalse(app(AppLock::class)->isEnabled());
         $this->get(route('dashboard'))->assertOk();
+    }
+
+    public function test_the_lock_cannot_be_enabled_without_a_backup_pin(): void
+    {
+        $this->put(route('settings.lock'), ['enabled' => true])
+            ->assertSessionHasErrors('enabled');
+
+        $this->assertFalse(app(AppLock::class)->isEnabled());
+    }
+
+    public function test_the_lock_can_be_enabled_once_a_pin_exists(): void
+    {
+        app(AppLock::class)->setPin('1234');
+
+        $this->put(route('settings.lock'), ['enabled' => true])->assertRedirect();
+
+        $this->assertTrue(app(AppLock::class)->isEnabled());
+    }
+
+    public function test_the_pin_is_stored_hashed_and_requires_confirmation(): void
+    {
+        $this->put(route('settings.pin'), ['pin' => '1234'])
+            ->assertSessionHasErrors('pin');
+
+        $this->put(route('settings.pin'), ['pin' => '1234', 'pin_confirmation' => '1234'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $stored = Setting::get(AppLock::PIN_KEY);
+
+        $this->assertNotSame('1234', $stored);
+        $this->assertTrue(Hash::check('1234', $stored));
+        $this->assertTrue(app(AppLock::class)->checkPin('1234'));
+        $this->assertFalse(app(AppLock::class)->checkPin('9999'));
+    }
+
+    public function test_changing_the_pin_while_armed_requires_the_current_pin(): void
+    {
+        $lock = app(AppLock::class);
+        $lock->setPin('1234');
+        $lock->setEnabled(true);
+        $this->post(route('lock.unlock'), ['pin' => '1234']);
+
+        $this->put(route('settings.pin'), ['pin' => '5678', 'pin_confirmation' => '5678'])
+            ->assertSessionHasErrors('current_pin');
+
+        $this->put(route('settings.pin'), [
+            'current_pin' => '1234',
+            'pin' => '5678',
+            'pin_confirmation' => '5678',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertTrue($lock->checkPin('5678'));
+    }
+
+    public function test_unlocking_with_the_correct_pin_grants_access(): void
+    {
+        $lock = app(AppLock::class);
+        $lock->setPin('1234');
+        $lock->setEnabled(true);
+
+        $this->post(route('lock.unlock'), ['pin' => '1234'])
+            ->assertRedirect(route('dashboard'));
+
+        $this->get(route('dashboard'))->assertOk();
+    }
+
+    public function test_unlocking_with_a_wrong_pin_keeps_the_app_locked(): void
+    {
+        $lock = app(AppLock::class);
+        $lock->setPin('1234');
+        $lock->setEnabled(true);
+
+        $this->post(route('lock.unlock'), ['pin' => '0000'])
+            ->assertSessionHasErrors('pin');
+
+        $this->get(route('dashboard'))->assertRedirect(route('lock.show'));
+    }
+
+    public function test_relock_drops_the_session_unlock(): void
+    {
+        $lock = app(AppLock::class);
+        $lock->setPin('1234');
+        $lock->setEnabled(true);
+
+        $this->post(route('lock.unlock'), ['pin' => '1234']);
+        $this->get(route('dashboard'))->assertOk();
+
+        $this->post(route('lock.relock'))->assertRedirect(route('lock.show'));
+
+        $this->get(route('dashboard'))->assertRedirect(route('lock.show'));
+
+        // Relock stays reachable even while locked (lifecycle calls).
+        $this->post(route('lock.relock'))->assertRedirect(route('lock.show'));
     }
 }

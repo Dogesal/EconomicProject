@@ -17,8 +17,8 @@ class EnsureAppUnlocked
             return $next($request);
         }
 
-        // The lock screen and its unlock endpoint must stay reachable while locked.
-        if ($request->routeIs('lock.show', 'lock.unlock')) {
+        // The lock screen and its unlock/relock endpoints must stay reachable while locked.
+        if ($request->routeIs('lock.show', 'lock.unlock', 'lock.relock')) {
             return $next($request);
         }
 

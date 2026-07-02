@@ -26,6 +26,7 @@ class SettingsController extends Controller
         return Inertia::render('Settings/Index', [
             'displayCurrency' => $displayCurrency->resolve(),
             'appLockEnabled' => $lock->isEnabled(),
+            'appLockHasPin' => $lock->hasPin(),
             'currencies' => Currency::orderBy('code')->get(['code', 'name', 'symbol']),
             'accounts' => AccountData::collect($accounts->allActive()),
             'categories' => CategoryData::collect(Category::orderBy('name')->get()),
@@ -67,6 +68,12 @@ class SettingsController extends Controller
             'enabled' => ['required', 'boolean'],
         ]);
 
+        if ($data['enabled'] && ! $lock->hasPin()) {
+            // A backup PIN guarantees the user can always get back in even
+            // if biometrics are unavailable on the device.
+            return back()->withErrors(['enabled' => 'Configurá primero un PIN de respaldo.']);
+        }
+
         $lock->setEnabled($data['enabled']);
 
         if (! $data['enabled']) {
@@ -75,5 +82,22 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', $data['enabled'] ? 'Bloqueo activado.' : 'Bloqueo desactivado.');
+    }
+
+    public function updatePin(Request $request, AppLock $lock): RedirectResponse
+    {
+        $request->validate([
+            'pin' => ['required', 'digits_between:4,6', 'confirmed'],
+            'current_pin' => ['nullable', 'digits_between:4,6'],
+        ]);
+
+        // Changing an existing PIN while the lock is armed requires the old one.
+        if ($lock->hasPin() && $lock->isEnabled() && ! $lock->checkPin((string) $request->input('current_pin'))) {
+            return back()->withErrors(['current_pin' => 'El PIN actual no es correcto.']);
+        }
+
+        $lock->setPin($request->string('pin'));
+
+        return back()->with('success', 'PIN guardado.');
     }
 }

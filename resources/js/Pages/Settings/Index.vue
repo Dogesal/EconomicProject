@@ -10,12 +10,14 @@ import EmptyState from '@/Components/EmptyState.vue';
 import SegmentedControl from '@/Components/SegmentedControl.vue';
 import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import CategoryForm from './Partials/CategoryForm.vue';
+import PinForm from './Partials/PinForm.vue';
 import RecurringForm from './Partials/RecurringForm.vue';
 import RecurringListItem from './Partials/RecurringListItem.vue';
 
 const props = defineProps({
     displayCurrency: { type: String, default: 'PEN' },
     appLockEnabled: { type: Boolean, default: false },
+    appLockHasPin: { type: Boolean, default: false },
     currencies: { type: Array, default: () => [] },
     accounts: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
@@ -37,12 +39,32 @@ const themeOptions = [
     { value: 'dark', label: 'Oscuro' },
 ];
 
+const pinSheetOpen = ref(false);
+const pendingEnableLock = ref(false);
+
 const lockEnabled = computed({
     get: () => props.appLockEnabled,
     set: (enabled) => {
+        if (enabled && !props.appLockHasPin) {
+            // A backup PIN is required first; arm the lock right after saving it.
+            pendingEnableLock.value = true;
+            pinSheetOpen.value = true;
+
+            return;
+        }
+
         router.put('/settings/lock', { enabled }, { preserveScroll: true });
     },
 });
+
+const onPinSaved = () => {
+    pinSheetOpen.value = false;
+
+    if (pendingEnableLock.value) {
+        pendingEnableLock.value = false;
+        router.put('/settings/lock', { enabled: true }, { preserveScroll: true });
+    }
+};
 
 const currencyForm = useForm({ display_currency: props.displayCurrency });
 const saveCurrency = () => currencyForm.put('/settings/currency', { preserveScroll: true });
@@ -129,10 +151,21 @@ const confirmCategoryDelete = () => {
     <AppCard class="mb-4">
         <div class="flex items-center justify-between gap-4">
             <div>
-                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Bloqueo con biometría</h2>
-                <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Pedir huella o Face ID al abrir la app.</p>
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Bloqueo de la app</h2>
+                <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Pedir huella o PIN al abrir la app.</p>
             </div>
             <ToggleSwitch v-model="lockEnabled" />
+        </div>
+        <div class="mt-3 flex items-center justify-between gap-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+            <p class="text-xs text-slate-400 dark:text-slate-500">
+                PIN de respaldo:
+                <span :class="appLockHasPin ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'font-medium text-amber-600 dark:text-amber-400'">
+                    {{ appLockHasPin ? 'configurado' : 'sin configurar' }}
+                </span>
+            </p>
+            <BaseButton variant="secondary" size="sm" @click="pinSheetOpen = true">
+                {{ appLockHasPin ? 'Cambiar PIN' : 'Definir PIN' }}
+            </BaseButton>
         </div>
     </AppCard>
 
@@ -212,6 +245,10 @@ const confirmCategoryDelete = () => {
 
     <BottomSheet :open="sheetOpen" title="Nueva recurrente" @close="sheetOpen = false">
         <RecurringForm :accounts="accounts" :categories="categories" @saved="sheetOpen = false" />
+    </BottomSheet>
+
+    <BottomSheet :open="pinSheetOpen" :title="appLockHasPin ? 'Cambiar PIN' : 'Definir PIN de respaldo'" @close="pinSheetOpen = false">
+        <PinForm :key="pinSheetOpen" :require-current="appLockHasPin && appLockEnabled" @saved="onPinSaved" />
     </BottomSheet>
 
     <BottomSheet

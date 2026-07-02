@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/lock', [LockController::class, 'show'])->name('lock.show');
 Route::post('/unlock', [LockController::class, 'unlock'])->name('lock.unlock');
+Route::post('/lock/relock', [LockController::class, 'relock'])->name('lock.relock');
 
 Route::get('/', DashboardController::class)->name('dashboard');
 
@@ -47,6 +48,7 @@ Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])-
 Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
 Route::put('/settings/currency', [SettingsController::class, 'updateCurrency'])->name('settings.currency');
 Route::put('/settings/lock', [SettingsController::class, 'updateLock'])->name('settings.lock');
+Route::put('/settings/pin', [SettingsController::class, 'updatePin'])->name('settings.pin');
 Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
 Route::get('/settings/backup', BackupController::class)->name('settings.backup');
 
