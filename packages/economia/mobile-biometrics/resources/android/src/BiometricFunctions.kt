@@ -1,5 +1,7 @@
 package com.economia.biometrics
 
+import android.app.KeyguardManager
+import android.os.Build
 import android.util.Log
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators
@@ -38,49 +40,83 @@ object BiometricFunctions {
             val title = parameters["title"] as? String ?: "Desbloquear"
             val subtitle = parameters["subtitle"] as? String ?: "Confirmá tu identidad para continuar"
 
+            Log.i(TAG, "Prompt requested (API ${Build.VERSION.SDK_INT})")
+
             // BiometricPrompt must be created and shown on the main thread.
             activity.runOnUiThread {
-                val authenticators = Authenticators.BIOMETRIC_WEAK or Authenticators.DEVICE_CREDENTIAL
-                val availability = BiometricManager.from(activity).canAuthenticate(authenticators)
-
-                if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
-                    Log.w(TAG, "Biometric authentication unavailable (code $availability)")
-                    dispatchResult(eventClass, false, id)
-                    return@runOnUiThread
+                try {
+                    showPrompt(eventClass, id, title, subtitle)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to show biometric prompt", e)
+                    dispatchResult(eventClass, false, id, -1, "EXCEPTION: ${e.message}")
                 }
-
-                val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(title)
-                    .setSubtitle(subtitle)
-                    .setAllowedAuthenticators(authenticators)
-                    .setConfirmationRequired(false)
-                    .build()
-
-                val callback = object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        dispatchResult(eventClass, true, id)
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        // Includes user cancellation (ERROR_USER_CANCELED / ERROR_NEGATIVE_BUTTON).
-                        Log.w(TAG, "Biometric error $errorCode: $errString")
-                        dispatchResult(eventClass, false, id)
-                    }
-
-                    // onAuthenticationFailed() is a single failed attempt; the
-                    // prompt stays open and the user can retry, so no dispatch.
-                }
-
-                BiometricPrompt(activity, ContextCompat.getMainExecutor(activity), callback)
-                    .authenticate(promptInfo)
             }
 
             return mapOf("status" to "prompted")
         }
 
-        private fun dispatchResult(eventClass: String, success: Boolean, id: String?) {
+        private fun showPrompt(eventClass: String, id: String?, title: String, subtitle: String) {
+            val biometricStatus = BiometricManager.from(activity)
+                .canAuthenticate(Authenticators.BIOMETRIC_WEAK)
+            val biometricOk = biometricStatus == BiometricManager.BIOMETRIC_SUCCESS
+
+            val keyguard = ContextCompat.getSystemService(activity, KeyguardManager::class.java)
+            val credentialOk = keyguard?.isDeviceSecure == true
+
+            Log.i(TAG, "Availability: biometric=$biometricStatus credential=$credentialOk")
+
+            if (!biometricOk && !credentialOk) {
+                Log.w(TAG, "No biometric hardware/enrollment and no device credential (code $biometricStatus)")
+                dispatchResult(eventClass, false, id, biometricStatus, "UNAVAILABLE (code $biometricStatus)")
+                return
+            }
+
+            val builder = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setSubtitle(subtitle)
+                .setConfirmationRequired(false)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // API 30+: modern authenticators API supports the combination.
+                builder.setAllowedAuthenticators(Authenticators.BIOMETRIC_WEAK or Authenticators.DEVICE_CREDENTIAL)
+            } else if (credentialOk) {
+                // API < 30: the combined-authenticators flag set is not supported;
+                // the deprecated call shims biometric + credential via Keyguard.
+                @Suppress("DEPRECATION")
+                builder.setDeviceCredentialAllowed(true)
+            } else {
+                // Biometric-only devices without a secure lock screen need an
+                // explicit negative button.
+                builder.setNegativeButtonText("Cancelar")
+            }
+
+            val callback = object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    Log.i(TAG, "Authentication succeeded")
+                    dispatchResult(eventClass, true, id, 0, null)
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    // Includes user cancellation (ERROR_USER_CANCELED / ERROR_NEGATIVE_BUTTON).
+                    Log.w(TAG, "Authentication error $errorCode: $errString")
+                    dispatchResult(eventClass, false, id, errorCode, errString.toString())
+                }
+
+                // onAuthenticationFailed() is a single failed attempt; the
+                // prompt stays open and the user can retry, so no dispatch.
+            }
+
+            BiometricPrompt(activity, ContextCompat.getMainExecutor(activity), callback)
+                .authenticate(builder.build())
+
+            Log.i(TAG, "Prompt shown")
+        }
+
+        private fun dispatchResult(eventClass: String, success: Boolean, id: String?, code: Int, reason: String?) {
             val payload = JSONObject().apply {
                 put("success", success)
+                put("code", code)
+                if (reason != null) put("reason", reason)
                 if (id != null) put("id", id)
             }
 

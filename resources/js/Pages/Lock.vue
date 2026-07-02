@@ -11,6 +11,7 @@ defineProps({
 
 const biometricLoading = ref(false);
 const biometricFailed = ref(false);
+const biometricReason = ref(null);
 const pinInput = ref(null);
 
 const pinForm = useForm({ pin: '' });
@@ -18,8 +19,9 @@ const pinForm = useForm({ pin: '' });
 const unlockWithBiometrics = async () => {
     biometricLoading.value = true;
     biometricFailed.value = false;
+    biometricReason.value = null;
 
-    const ok = await promptBiometrics();
+    const { ok, reason } = await promptBiometrics();
 
     if (ok) {
         pinForm.transform(() => ({})).post('/unlock', {
@@ -27,6 +29,7 @@ const unlockWithBiometrics = async () => {
         });
     } else {
         biometricFailed.value = true;
+        biometricReason.value = reason;
         biometricLoading.value = false;
         pinInput.value?.$el?.focus();
     }
@@ -95,8 +98,9 @@ onMounted(() => {
             {{ biometricLoading ? 'Verificando huella…' : 'Usar huella' }}
         </button>
 
-        <p v-if="biometricFailed" class="mt-4 text-sm text-rose-400">
-            No se pudo verificar la huella. Usá tu PIN.
-        </p>
+        <div v-if="biometricFailed" class="mt-4">
+            <p class="text-sm text-rose-400">No se pudo verificar la huella. Usá tu PIN.</p>
+            <p v-if="biometricReason" class="mt-1 text-xs text-slate-500">({{ biometricReason }})</p>
+        </div>
     </div>
 </template>

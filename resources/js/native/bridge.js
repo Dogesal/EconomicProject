@@ -27,41 +27,46 @@ export function isNativeApp() {
 }
 
 /**
- * Triggers the device biometric prompt and resolves with whether the user
- * authenticated. Falls back to resolving `true` on web (no biometric hardware),
- * so development in a browser is never blocked.
+ * Triggers the device biometric prompt and resolves with the outcome and,
+ * on failure, a human-readable reason (bridge error, sensor availability
+ * code, timeout…) so the lock screen can surface what went wrong. Falls
+ * back to `{ ok: true }` on web so browser development is never blocked.
  *
- * @returns {Promise<boolean>}
+ * @returns {Promise<{ ok: boolean, reason: string|null }>}
  */
 export function promptBiometrics({ timeoutMs = 30000 } = {}) {
     if (!isNativeApp()) {
-        return Promise.resolve(true);
+        return Promise.resolve({ ok: true, reason: null });
     }
 
     return new Promise((resolve) => {
         let settled = false;
 
-        const finish = (result) => {
+        const finish = (ok, reason = null) => {
             if (settled) {
                 return;
             }
             settled = true;
             BIOMETRIC_EVENTS.forEach((event) => Off(event, handler));
             clearTimeout(timer);
-            resolve(result);
+            resolve({ ok, reason });
         };
 
         const handler = (payload) => {
-            const ok = payload === true || payload?.success === true;
-            finish(ok);
+            if (payload === true || payload?.success === true) {
+                finish(true);
+                return;
+            }
+
+            finish(false, payload?.reason ?? (payload?.code != null ? `code ${payload.code}` : 'rechazado'));
         };
 
-        const timer = setTimeout(() => finish(false), timeoutMs);
+        const timer = setTimeout(() => finish(false, 'timeout'), timeoutMs);
 
         BIOMETRIC_EVENTS.forEach((event) => On(event, handler));
 
         // Biometrics.prompt() returns a lazy thenable: the bridge call only
         // fires once `.then()` is invoked, so wrap it in a real promise.
-        Promise.resolve(Biometrics.prompt()).catch(() => finish(false));
+        Promise.resolve(Biometrics.prompt()).catch((error) => finish(false, error?.message ?? 'bridge error'));
     });
 }
