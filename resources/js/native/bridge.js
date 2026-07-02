@@ -10,20 +10,18 @@ const BIOMETRIC_EVENTS = [
 
 /**
  * Detects whether the app is running inside the NativePHP native shell (as
- * opposed to a plain browser during development). NativePHP serves the app from
- * a local origin and exposes its bridge endpoint; we treat a non-standard
- * origin / injected flag as "native".
+ * opposed to a plain browser during development). The canonical signal is
+ * `window.__nativephp`, set by app.blade.php from PHP's
+ * `function_exists('nativephp_call')` — that function only exists in the
+ * on-device runtime. The webview does NOT customize its user agent nor
+ * inject globals, so no client-side heuristic is reliable.
  */
 export function isNativeApp() {
     if (typeof window === 'undefined') {
         return false;
     }
 
-    if (window.NativePHP || window.__nativephp) {
-        return true;
-    }
-
-    return /nativephp/i.test(navigator.userAgent ?? '');
+    return window.__nativephp === true || Boolean(window.NativePHP);
 }
 
 /**

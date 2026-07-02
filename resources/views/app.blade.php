@@ -2,6 +2,11 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
     <head>
         <meta charset="utf-8" />
+        {{-- `nativephp_call` only exists inside the on-device runtime; this flag is
+             the reliable "running as native app" signal for the JS bridge. --}}
+        <script>
+            window.__nativephp = @json(function_exists('nativephp_call'));
+        </script>
         {{-- Resolve the theme before first paint: `system` follows the device via prefers-color-scheme. --}}
         <script>
             (function (theme) {
