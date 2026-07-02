@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "27b77940d45a05be31d7bbc6b62cad5e",
+    "content-hash": "93744578e148945a0c637919866b3bf0",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -188,6 +188,61 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "codingwithrk/double-back-to-close",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/codingwithrk/double-back-to-close.git",
+                "reference": "5c8f7ee0ec24ed42f85f2c263e9179b96b6b0b99"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/codingwithrk/double-back-to-close/zipball/5c8f7ee0ec24ed42f85f2c263e9179b96b6b0b99",
+                "reference": "5c8f7ee0ec24ed42f85f2c263e9179b96b6b0b99",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "nativephp/mobile-dialog": "^1.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "pestphp/pest": "^3.0"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Codingwithrk\\DoubleBackToClose\\DoubleBackToCloseServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Codingwithrk\\DoubleBackToClose\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "CodingWithRK",
+                    "email": "pappalarajkumar@gmail.com"
+                }
+            ],
+            "description": "A NativePHP Mobile plugin that prompts users to press back twice before exiting the app.",
+            "support": {
+                "issues": "https://github.com/codingwithrk/double-back-to-close/issues",
+                "source": "https://github.com/codingwithrk/double-back-to-close/tree/v1.0.0"
+            },
+            "time": "2026-04-15T18:36:19+00:00"
         },
         {
             "name": "dasprid/enum",
@@ -2719,6 +2774,57 @@
             "time": "2026-06-05T17:27:23+00:00"
         },
         {
+            "name": "nativephp/mobile-dialog",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/NativePHP/mobile-dialog.git",
+                "reference": "fd0ca0d79a2f2396929f6146fef7a55c761b3dd0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/NativePHP/mobile-dialog/zipball/fd0ca0d79a2f2396929f6146fef7a55c761b3dd0",
+                "reference": "fd0ca0d79a2f2396929f6146fef7a55c761b3dd0",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Native\\Mobile\\Providers\\DialogServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Native\\Mobile\\Providers\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "NativePHP",
+                    "email": "support@nativephp.com"
+                }
+            ],
+            "description": "Native alert dialogs and toast notifications for NativePHP Mobile",
+            "support": {
+                "issues": "https://github.com/NativePHP/mobile-dialog/issues",
+                "source": "https://github.com/NativePHP/mobile-dialog/tree/1.0.1"
+            },
+            "time": "2026-03-20T22:08:33+00:00"
+        },
+        {
             "name": "nativephp/mobile-file",
             "version": "1.0.1",
             "source": {
@@ -4588,6 +4694,64 @@
                 }
             ],
             "time": "2025-08-19T18:57:03+00:00"
+        },
+        {
+            "name": "s2br/nativephp-mobile-splashscreen",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/S2BR/nativephp-mobile-splashscreen.git",
+                "reference": "2235485b29903d08971518d36cbaca93c1e9d731"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/S2BR/nativephp-mobile-splashscreen/zipball/2235485b29903d08971518d36cbaca93c1e9d731",
+                "reference": "2235485b29903d08971518d36cbaca93c1e9d731",
+                "shasum": ""
+            },
+            "require": {
+                "ext-zip": "*",
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "MobileSplashscreen": "S2BR\\MobileSplashscreen\\Facades\\MobileSplashscreen"
+                    },
+                    "providers": [
+                        "S2BR\\MobileSplashscreen\\MobileSplashscreenServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "S2BR\\MobileSplashscreen\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Israel Pereira",
+                    "email": "ipereira.eu@gmail.com"
+                }
+            ],
+            "description": "A feature-rich NativePHP plugin for animated mobile splash screens with gradients, events, and flexible configuration.",
+            "support": {
+                "issues": "https://github.com/S2BR/nativephp-mobile-splashscreen/issues",
+                "source": "https://github.com/S2BR/nativephp-mobile-splashscreen/tree/v1.3.0"
+            },
+            "time": "2026-06-14T13:29:53+00:00"
         },
         {
             "name": "spatie/laravel-data",

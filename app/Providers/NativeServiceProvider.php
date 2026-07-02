@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use Codingwithrk\DoubleBackToClose\DoubleBackToCloseServiceProvider;
+use Codingwithrk\DoubleBackToClose\Facades\DoubleBackToClose;
 use Economia\MobileBiometrics\MobileBiometricsServiceProvider;
 use Ikromjon\LocalNotifications\LocalNotificationsServiceProvider;
 use Illuminate\Support\ServiceProvider;
+use Native\Mobile\Providers\DialogServiceProvider;
 use Native\Mobile\Providers\FileServiceProvider;
 use Native\Mobile\Providers\ShareServiceProvider;
+use S2BR\MobileSplashscreen\MobileSplashscreenServiceProvider;
 use ZinXan\QuickActions\QuickActions;
 use ZinXan\QuickActions\QuickActionsServiceProvider;
 
@@ -26,6 +30,9 @@ class NativeServiceProvider extends ServiceProvider
 
         QuickActions::addItem('Nueva deuda', 'nueva-deuda')
             ->route('debts.index', ['new' => 1]);
+
+        // Require a second back press to leave the app (no-op off-device).
+        DoubleBackToClose::enable('Tocá atrás de nuevo para salir', 2000);
     }
 
     /**
@@ -43,6 +50,9 @@ class NativeServiceProvider extends ServiceProvider
             QuickActionsServiceProvider::class,
             ShareServiceProvider::class,
             FileServiceProvider::class,
+            MobileSplashscreenServiceProvider::class,
+            DoubleBackToCloseServiceProvider::class,
+            DialogServiceProvider::class,
         ];
     }
 }
