@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import BaseButton from '@/Components/BaseButton.vue';
 import BaseInput from '@/Components/BaseInput.vue';
+import EmojiPicker from '@/Components/EmojiPicker.vue';
 import FormField from '@/Components/FormField.vue';
 import SegmentedControl from '@/Components/SegmentedControl.vue';
 
@@ -50,14 +51,13 @@ const submit = () => {
     <form class="space-y-4" @submit.prevent="submit">
         <SegmentedControl v-if="!isEdit" v-model="form.type" :options="typeOptions" />
 
-        <div class="grid grid-cols-[1fr_5rem] gap-3">
-            <FormField label="Nombre" :error="form.errors.name">
-                <BaseInput v-model="form.name" type="text" />
-            </FormField>
-            <FormField label="Icono" :error="form.errors.icon">
-                <BaseInput v-model="form.icon" type="text" maxlength="2" placeholder="🍕" class="text-center" />
-            </FormField>
-        </div>
+        <FormField label="Nombre" :error="form.errors.name">
+            <BaseInput v-model="form.name" type="text" />
+        </FormField>
+
+        <FormField label="Icono (opcional)" :error="form.errors.icon">
+            <EmojiPicker v-model="form.icon" />
+        </FormField>
 
         <FormField label="Color" :error="form.errors.color">
             <div class="flex gap-2">
