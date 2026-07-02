@@ -1,5 +1,13 @@
 import { Biometrics, On, Off, Events } from '@nativephp/mobile';
 
+// Event dispatched by our own plugin (economia/mobile-biometrics), which
+// reuses the core event class. The official paid plugin uses the second
+// name; listening to both keeps this working if the plugin is ever swapped.
+const BIOMETRIC_EVENTS = [
+    'Native\\Mobile\\Events\\Biometric\\Completed',
+    Events.Biometrics.Completed,
+];
+
 /**
  * Detects whether the app is running inside the NativePHP native shell (as
  * opposed to a plain browser during development). NativePHP serves the app from
@@ -38,7 +46,7 @@ export function promptBiometrics({ timeoutMs = 30000 } = {}) {
                 return;
             }
             settled = true;
-            Off(Events.Biometrics.Completed, handler);
+            BIOMETRIC_EVENTS.forEach((event) => Off(event, handler));
             clearTimeout(timer);
             resolve(result);
         };
@@ -50,12 +58,10 @@ export function promptBiometrics({ timeoutMs = 30000 } = {}) {
 
         const timer = setTimeout(() => finish(false), timeoutMs);
 
-        On(Events.Biometrics.Completed, handler);
+        BIOMETRIC_EVENTS.forEach((event) => On(event, handler));
 
-        try {
-            Biometrics.prompt();
-        } catch {
-            finish(false);
-        }
+        // Biometrics.prompt() returns a lazy thenable: the bridge call only
+        // fires once `.then()` is invoked, so wrap it in a real promise.
+        Promise.resolve(Biometrics.prompt()).catch(() => finish(false));
     });
 }

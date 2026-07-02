@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1633881236ca04d87b110cfb4c8acc16",
+    "content-hash": "d1d3f60bd3bcda1e8a94241c7212ca02",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -592,6 +592,41 @@
                 }
             ],
             "time": "2025-10-31T18:51:33+00:00"
+        },
+        {
+            "name": "economia/mobile-biometrics",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "packages/economia/mobile-biometrics",
+                "reference": "b2cc698594f84d9fefea07619ffbbf0e821de315"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Economia\\MobileBiometrics\\MobileBiometricsServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Economia\\MobileBiometrics\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Plugin de autenticación biométrica (BiometricPrompt) para Mi Economía",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "egulias/email-validator",
@@ -10009,7 +10044,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "economia/mobile-biometrics": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

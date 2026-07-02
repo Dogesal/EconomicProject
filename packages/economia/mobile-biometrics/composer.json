@@ -1,0 +1,25 @@
+{
+    "name": "economia/mobile-biometrics",
+    "description": "Plugin de autenticación biométrica (BiometricPrompt) para Mi Economía",
+    "type": "nativephp-plugin",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Economia\\MobileBiometrics\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Economia\\MobileBiometrics\\MobileBiometricsServiceProvider"
+            ]
+        },
+        "nativephp": {
+            "manifest": "nativephp.json"
+        }
+    },
+    "minimum-stability": "stable"
+}
