@@ -16,6 +16,29 @@ class RecurringTransactionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_a_recurring_transaction_can_be_created_from_the_http_endpoint(): void
+    {
+        $account = Account::factory()->create();
+
+        $this->post(route('recurring.store'), [
+            'account_id' => $account->id,
+            'category_id' => null,
+            'type' => 'expense',
+            'amount' => 1200,
+            'description' => 'Alquiler',
+            'frequency' => 'monthly',
+            'interval' => 1,
+            'next_run_on' => now()->addMonth()->startOfMonth()->toDateString(),
+            'end_on' => null,
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $recurring = RecurringTransaction::sole();
+
+        $this->assertSame(RecurrenceFrequency::Monthly, $recurring->frequency);
+        $this->assertSame('Alquiler', $recurring->description);
+        $this->assertSame(120000, $recurring->amount->minorUnits);
+    }
+
     public function test_it_catches_up_all_missed_monthly_occurrences(): void
     {
         $account = Account::factory()->withInitialBalance(0)->create();

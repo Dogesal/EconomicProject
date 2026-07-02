@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Enums\RecurrenceFrequency;
 use App\Domain\Enums\TransactionType;
 use App\Domain\Models\Account;
 use App\Domain\Models\RecurringTransaction;
@@ -23,7 +24,7 @@ class RecurringTransactionController extends Controller
             'amount' => $amount,
             'currency' => $account->currency,
             'description' => $request->input('description'),
-            'frequency' => $request->string('frequency'),
+            'frequency' => $request->enum('frequency', RecurrenceFrequency::class),
             'interval' => $request->integer('interval'),
             'next_run_on' => $request->date('next_run_on'),
             'end_on' => $request->date('end_on'),
