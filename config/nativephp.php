@@ -221,6 +221,9 @@ return [
         |
         */
 
+        // Android 10 (API 29): requerido por el plugin de notificaciones locales.
+        'min_sdk' => (int) env('NATIVEPHP_ANDROID_MIN_SDK', 29),
+
         /*
         |--------------------------------------------------------------------------
         | Status Bar Style
