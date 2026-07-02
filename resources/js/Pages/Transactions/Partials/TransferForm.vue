@@ -63,8 +63,19 @@ const submit = () => {
             </BaseSelect>
         </FormField>
 
-        <FormField :label="`Monto${fromAccount ? ` (${fromAccount.currency})` : ''}`" :error="form.errors.amount">
-            <BaseInput v-model="form.amount" type="number" step="0.01" min="0" inputmode="decimal" />
+        <FormField
+            :label="`Monto${fromAccount ? ` (${fromAccount.currency})` : ''}`"
+            :error="form.errors.amount"
+            :hint="fromAccount ? `Disponible: ${fromAccount.currentBalance.formatted}` : ''"
+        >
+            <BaseInput
+                v-model="form.amount"
+                type="number"
+                step="0.01"
+                min="0"
+                :max="fromAccount?.currentBalance.decimal"
+                inputmode="decimal"
+            />
         </FormField>
 
         <div class="grid grid-cols-2 gap-3">

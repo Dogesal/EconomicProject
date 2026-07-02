@@ -13,6 +13,7 @@ import GoalForm from './Partials/GoalForm.vue';
 
 const props = defineProps({
     goals: { type: Array, default: () => [] },
+    accounts: { type: Array, default: () => [] },
 });
 
 const tabs = [
@@ -37,6 +38,34 @@ const amountTitle = computed(() => {
     const { goal, mode } = amountAction.value;
 
     return mode === 'contribute' ? `Aportar a “${goal.name}”` : `Retirar de “${goal.name}”`;
+});
+
+// Caps: withdrawals up to what was saved; contributions to a linked goal
+// up to the account balance (the server enforces both anyway).
+const amountMax = computed(() => {
+    if (!amountAction.value) {
+        return null;
+    }
+
+    const { goal, mode } = amountAction.value;
+
+    if (mode === 'withdraw') {
+        return goal.current.decimal;
+    }
+
+    const account = props.accounts.find((a) => a.id === goal.accountId);
+
+    return account ? account.currentBalance.decimal : null;
+});
+
+const amountMaxHint = computed(() => {
+    if (!amountAction.value || amountMax.value === null) {
+        return '';
+    }
+
+    return amountAction.value.mode === 'withdraw'
+        ? `Ahorrado: ${amountAction.value.goal.current.formatted}`
+        : `Disponible en la cuenta: ${props.accounts.find((a) => a.id === amountAction.value.goal.accountId)?.currentBalance.formatted ?? ''}`;
 });
 
 const openAmountDialog = (goal, mode) => {
@@ -92,6 +121,7 @@ const confirmDelete = () => {
                         <p class="truncate font-medium text-slate-800 dark:text-slate-200">{{ goal.name }}</p>
                         <p class="text-xs text-slate-400 dark:text-slate-500">
                             {{ goal.statusLabel }}<span v-if="goal.targetDate"> · meta {{ goal.targetDate }}</span>
+                            <span v-if="goal.accountName"> · 🏦 {{ goal.accountName }}</span>
                         </p>
                     </div>
                     <button
@@ -125,7 +155,7 @@ const confirmDelete = () => {
     <EmptyState v-else message="Creá tu primera meta de ahorro." />
 
     <BottomSheet :open="sheetOpen" title="Nueva meta" @close="sheetOpen = false">
-        <GoalForm @saved="sheetOpen = false" />
+        <GoalForm :accounts="accounts" @saved="sheetOpen = false" />
     </BottomSheet>
 
     <AmountDialog
@@ -135,6 +165,8 @@ const confirmDelete = () => {
         :confirm-label="amountAction?.mode === 'withdraw' ? 'Retirar' : 'Aportar'"
         :processing="amountProcessing"
         :error="amountError"
+        :max="amountMax"
+        :max-hint="amountMaxHint"
         @submit="submitAmount"
         @cancel="amountAction = null"
     />

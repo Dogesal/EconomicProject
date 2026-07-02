@@ -35,6 +35,15 @@ class RecordDebtPayment
             throw new InvalidArgumentException('Payment currency must match both the debt and the account.');
         }
 
+        if ($amount->absolute()->minorUnits > $debt->remaining()->minorUnits) {
+            throw new InvalidArgumentException('Payment exceeds the remaining debt amount.');
+        }
+
+        if ($debt->direction === DebtDirection::IOwe
+            && $amount->absolute()->minorUnits > $account->current_balance->minorUnits) {
+            throw new InvalidArgumentException('Insufficient funds in the account.');
+        }
+
         return DB::transaction(function () use ($debt, $account, $amount, $occurredOn) {
             $type = $debt->direction->paymentTransactionType();
 

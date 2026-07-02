@@ -37,6 +37,7 @@ class Transaction extends Model
         'transfer_group_id',
         'recurring_transaction_id',
         'debt_id',
+        'savings_goal_id',
     ];
 
     protected function casts(): array
@@ -71,6 +72,14 @@ class Transaction extends Model
     public function debt(): BelongsTo
     {
         return $this->belongsTo(Debt::class);
+    }
+
+    /**
+     * @return BelongsTo<SavingsGoal, $this>
+     */
+    public function savingsGoal(): BelongsTo
+    {
+        return $this->belongsTo(SavingsGoal::class);
     }
 
     /**

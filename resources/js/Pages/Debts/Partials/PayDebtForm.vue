@@ -51,7 +51,20 @@ const submit = () => {
             :error="form.errors.amount"
             :hint="`Restante: ${debt.remaining.formatted}`"
         >
-            <BaseInput v-model="form.amount" type="number" step="0.01" min="0" inputmode="decimal" />
+            <div class="flex gap-2">
+                <BaseInput
+                    v-model="form.amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    :max="debt.remaining.decimal"
+                    inputmode="decimal"
+                    class="flex-1"
+                />
+                <BaseButton variant="secondary" size="sm" @click="form.amount = debt.remaining.decimal">
+                    {{ isCollection ? 'Cobrar todo' : 'Pagar todo' }}
+                </BaseButton>
+            </div>
         </FormField>
 
         <FormField label="Fecha" :error="form.errors.occurred_on">

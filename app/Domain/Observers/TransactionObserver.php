@@ -34,6 +34,14 @@ class TransactionObserver
         if ($transaction->debt_id !== null) {
             $transaction->debt?->revertPayment($transaction->amount);
         }
+
+        // Deleting a goal movement undoes its effect: a deleted contribution
+        // (outflow) lowers the goal; a deleted withdrawal (inflow) restores it.
+        if ($transaction->savings_goal_id !== null) {
+            $transaction->savingsGoal?->adjustCurrent(
+                $transaction->is_inflow ? $transaction->amount->minorUnits : -$transaction->amount->minorUnits
+            );
+        }
     }
 
     public function restored(Transaction $transaction): void
@@ -42,6 +50,12 @@ class TransactionObserver
 
         if ($transaction->debt_id !== null) {
             $transaction->debt?->applyPayment($transaction->amount);
+        }
+
+        if ($transaction->savings_goal_id !== null) {
+            $transaction->savingsGoal?->adjustCurrent(
+                $transaction->is_inflow ? -$transaction->amount->minorUnits : $transaction->amount->minorUnits
+            );
         }
     }
 }

@@ -11,6 +11,9 @@ const props = defineProps({
     confirmLabel: { type: String, default: 'Confirmar' },
     processing: { type: Boolean, default: false },
     error: { type: String, default: '' },
+    /** Optional upper bound; shows a hint and a quick-fill button. */
+    max: { type: Number, default: null },
+    maxHint: { type: String, default: '' },
 });
 
 const emit = defineEmits(['submit', 'cancel']);
@@ -30,9 +33,15 @@ watch(
 );
 
 const submit = () => {
-    if (amount.value !== '' && Number(amount.value) > 0) {
-        emit('submit', amount.value);
+    if (amount.value === '' || Number(amount.value) <= 0) {
+        return;
     }
+
+    if (props.max !== null && Number(amount.value) > props.max) {
+        return;
+    }
+
+    emit('submit', amount.value);
 };
 </script>
 
@@ -48,9 +57,26 @@ const submit = () => {
                 <form class="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" @submit.prevent="submit">
                     <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
                     <div class="mt-3">
-                        <FormField :label="currency ? `Monto (${currency})` : 'Monto'" :error="error">
-                            <BaseInput ref="input" v-model="amount" type="number" step="0.01" min="0.01" inputmode="decimal" />
+                        <FormField :label="currency ? `Monto (${currency})` : 'Monto'" :error="error" :hint="maxHint">
+                            <div class="flex gap-2">
+                                <BaseInput
+                                    ref="input"
+                                    v-model="amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    :max="max ?? undefined"
+                                    inputmode="decimal"
+                                    class="flex-1"
+                                />
+                                <BaseButton v-if="max !== null" variant="secondary" size="sm" @click="amount = max">
+                                    Todo
+                                </BaseButton>
+                            </div>
                         </FormField>
+                        <p v-if="max !== null && amount !== '' && Number(amount) > max" class="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                            El máximo es {{ max }}.
+                        </p>
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-2">
                         <BaseButton variant="secondary" @click="emit('cancel')">Cancelar</BaseButton>

@@ -126,6 +126,50 @@ class DebtTest extends TestCase
         $this->assertSame(100000, $account->refresh()->current_balance->minorUnits);
     }
 
+    public function test_paying_more_than_the_remaining_amount_is_rejected(): void
+    {
+        $account = Account::factory()->withInitialBalance(1000)->create();
+        $debt = Debt::factory()->iOwe()->amount(250)->create();
+
+        $this->post(route('debts.pay', $debt), [
+            'account_id' => $account->id,
+            'amount' => 300,
+            'occurred_on' => now()->toDateString(),
+        ])->assertSessionHasErrors('amount');
+
+        $this->assertSame(0, $debt->refresh()->paid_amount->minorUnits);
+        $this->assertSame(100000, $account->refresh()->current_balance->minorUnits);
+    }
+
+    public function test_paying_a_debt_with_more_than_the_account_balance_is_rejected(): void
+    {
+        $account = Account::factory()->withInitialBalance(50)->create();
+        $debt = Debt::factory()->iOwe()->amount(400)->create();
+
+        $this->post(route('debts.pay', $debt), [
+            'account_id' => $account->id,
+            'amount' => 100,
+            'occurred_on' => now()->toDateString(),
+        ])->assertSessionHasErrors('amount');
+
+        $this->assertSame(0, $debt->refresh()->paid_amount->minorUnits);
+    }
+
+    public function test_collecting_an_owed_debt_is_not_capped_by_the_account_balance(): void
+    {
+        // Money comes IN when collecting, so a low balance must not block it.
+        $account = Account::factory()->withInitialBalance(0)->create();
+        $debt = Debt::factory()->owedToMe()->amount(300)->create();
+
+        $this->post(route('debts.pay', $debt), [
+            'account_id' => $account->id,
+            'amount' => 300,
+            'occurred_on' => now()->toDateString(),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(30000, $account->refresh()->current_balance->minorUnits);
+    }
+
     public function test_the_debts_page_renders_with_summary_totals(): void
     {
         Debt::factory()->iOwe()->amount(500)->create();

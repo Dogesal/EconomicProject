@@ -17,6 +17,8 @@ class GoalData extends Data
         public string $status,
         public string $statusLabel,
         public ?string $targetDate,
+        public ?string $accountId,
+        public ?string $accountName,
     ) {}
 
     public static function fromModel(SavingsGoal $goal): self
@@ -37,6 +39,8 @@ class GoalData extends Data
             status: $goal->status->value,
             statusLabel: $goal->status->label(),
             targetDate: $goal->target_date?->toDateString(),
+            accountId: $goal->account_id,
+            accountName: $goal->relationLoaded('account') ? $goal->account?->name : null,
         );
     }
 }

@@ -34,6 +34,14 @@ const typeOptions = [
 
 const filteredCategories = computed(() => props.categories.filter((c) => c.type === form.type));
 
+const selectedAccount = computed(() => props.accounts.find((a) => a.id === form.account_id) ?? null);
+
+const balanceHint = computed(() =>
+    form.type === 'expense' && selectedAccount.value
+        ? `Disponible: ${selectedAccount.value.currentBalance.formatted}`
+        : '',
+);
+
 const submit = () => {
     const request = form.transform((data) => ({ ...data, category_id: data.category_id || null }));
 
@@ -61,7 +69,7 @@ const submit = () => {
             </BaseSelect>
         </FormField>
 
-        <FormField label="Monto" :error="form.errors.amount">
+        <FormField label="Monto" :error="form.errors.amount" :hint="balanceHint">
             <BaseInput v-model="form.amount" type="number" step="0.01" min="0" inputmode="decimal" />
         </FormField>
 

@@ -36,6 +36,10 @@ class TransferBetweenAccounts
             throw new InvalidArgumentException('Cross-currency transfers are not supported yet.');
         }
 
+        if ($amount->absolute()->minorUnits > $from->current_balance->minorUnits) {
+            throw new InvalidArgumentException('Insufficient funds in the source account.');
+        }
+
         $groupId = (string) Str::uuid();
         $date = $occurredOn ?? now();
         $magnitude = $amount->absolute();

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreGoalRequest extends FormRequest
 {
@@ -21,6 +22,7 @@ class StoreGoalRequest extends FormRequest
             'target_amount' => ['required', 'numeric', 'gt:0'],
             'currency' => ['required', 'string', 'size:3'],
             'target_date' => ['nullable', 'date'],
+            'account_id' => ['nullable', 'uuid', Rule::exists('accounts', 'id')],
         ];
     }
 }

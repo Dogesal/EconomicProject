@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -62,6 +63,30 @@ class SavingsGoal extends Model
     public function isReached(): bool
     {
         return $this->current_amount->minorUnits >= $this->target_amount->minorUnits;
+    }
+
+    /**
+     * @return HasMany<Transaction, $this>
+     */
+    public function movements(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Applies a signed delta (minor units) to the saved amount, flooring at
+     * zero, and keeps the status in sync. Used by contribute/withdraw and by
+     * the observer when a linked transaction is deleted or restored.
+     */
+    public function adjustCurrent(int $deltaMinor): void
+    {
+        $this->current_amount = Money::fromMinor(
+            max(0, $this->current_amount->minorUnits + $deltaMinor),
+            $this->currency,
+        );
+
+        $this->status = $this->isReached() ? GoalStatus::Completed : GoalStatus::Active;
+        $this->save();
     }
 
     protected static function newFactory(): SavingsGoalFactory
