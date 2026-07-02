@@ -50,7 +50,8 @@ Route::put('/settings/currency', [SettingsController::class, 'updateCurrency'])-
 Route::put('/settings/lock', [SettingsController::class, 'updateLock'])->name('settings.lock');
 Route::put('/settings/pin', [SettingsController::class, 'updatePin'])->name('settings.pin');
 Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
-Route::get('/settings/backup', BackupController::class)->name('settings.backup');
+Route::get('/settings/backup', [BackupController::class, 'download'])->name('settings.backup');
+Route::post('/settings/backup/share', [BackupController::class, 'share'])->name('settings.backup.share');
 
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
 Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');

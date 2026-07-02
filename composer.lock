@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d1d3f60bd3bcda1e8a94241c7212ca02",
+    "content-hash": "27b77940d45a05be31d7bbc6b62cad5e",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1365,6 +1365,68 @@
             "time": "2026-06-23T13:02:23+00:00"
         },
         {
+            "name": "ikromjon/nativephp-mobile-local-notifications",
+            "version": "v1.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Ikromjon1998/nativephp-mobile-local-notifications.git",
+                "reference": "c2205a03dd795e3c5d9a62d14928d2591022d0ea"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Ikromjon1998/nativephp-mobile-local-notifications/zipball/c2205a03dd795e3c5d9a62d14928d2591022d0ea",
+                "reference": "c2205a03dd795e3c5d9a62d14928d2591022d0ea",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.28",
+                "orchestra/testbench": "^9.0",
+                "pestphp/pest": "^3.0",
+                "phpstan/phpstan": "^2.0",
+                "rector/rector": "^2.3"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Ikromjon\\LocalNotifications\\LocalNotificationsServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ikromjon\\LocalNotifications\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Local notifications plugin for NativePHP Mobile - schedule, cancel, and manage local notifications with channels, badges, sounds, and repeat intervals",
+            "keywords": [
+                "laravel",
+                "local-notifications",
+                "mobile",
+                "nativephp",
+                "notifications",
+                "reminders",
+                "schedule"
+            ],
+            "support": {
+                "issues": "https://github.com/Ikromjon1998/nativephp-mobile-local-notifications/issues",
+                "source": "https://github.com/Ikromjon1998/nativephp-mobile-local-notifications/tree/v1.9.0"
+            },
+            "time": "2026-04-05T20:31:01+00:00"
+        },
+        {
             "name": "inertiajs/inertia-laravel",
             "version": "v3.1.0",
             "source": {
@@ -2410,6 +2472,67 @@
             "time": "2026-03-08T20:05:35+00:00"
         },
         {
+            "name": "matildevoldsen/quick-actions",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Matildevoldsen/quick-actions.git",
+                "reference": "dfaa4f12067c75cc3fc91805d75d0fffc65f41d1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Matildevoldsen/quick-actions/zipball/dfaa4f12067c75cc3fc91805d75d0fffc65f41d1",
+                "reference": "dfaa4f12067c75cc3fc91805d75d0fffc65f41d1",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "laravel/framework": "^13.0",
+                "orchestra/testbench": "^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-laravel": "^4.0"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Shortcut": "ZinXan\\QuickActions\\Shortcut",
+                        "QuickActionsSync": "ZinXan\\QuickActions\\Facades\\QuickActionsSync"
+                    },
+                    "providers": [
+                        "ZinXan\\QuickActions\\QuickActionsServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ZinXan\\QuickActions\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "ZinXan",
+                    "homepage": "https://github.com/ZinXan"
+                }
+            ],
+            "description": "Home screen quick actions (iOS) and launcher shortcuts (Android) for NativePHP Mobile",
+            "support": {
+                "issues": "https://github.com/Matildevoldsen/quick-actions/issues",
+                "source": "https://github.com/Matildevoldsen/quick-actions/tree/v1.0.0"
+            },
+            "time": "2026-05-18T19:38:07+00:00"
+        },
+        {
             "name": "monolog/monolog",
             "version": "3.10.0",
             "source": {
@@ -2594,6 +2717,108 @@
                 "source": "https://github.com/NativePHP/mobile-air/tree/3.3.6"
             },
             "time": "2026-06-05T17:27:23+00:00"
+        },
+        {
+            "name": "nativephp/mobile-file",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/NativePHP/mobile-file.git",
+                "reference": "a265884b3f639c1b62312f13674f3c0efd753761"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/NativePHP/mobile-file/zipball/a265884b3f639c1b62312f13674f3c0efd753761",
+                "reference": "a265884b3f639c1b62312f13674f3c0efd753761",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Native\\Mobile\\Providers\\FileServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Native\\Mobile\\Providers\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "NativePHP",
+                    "email": "support@nativephp.com"
+                }
+            ],
+            "description": "File operations plugin for NativePHP Mobile",
+            "support": {
+                "issues": "https://github.com/NativePHP/mobile-file/issues",
+                "source": "https://github.com/NativePHP/mobile-file/tree/1.0.1"
+            },
+            "time": "2026-03-20T22:08:33+00:00"
+        },
+        {
+            "name": "nativephp/mobile-share",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/NativePHP/mobile-share.git",
+                "reference": "e9a39534314356eb9d5e221df8dd8a5fc987ccc4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/NativePHP/mobile-share/zipball/e9a39534314356eb9d5e221df8dd8a5fc987ccc4",
+                "reference": "e9a39534314356eb9d5e221df8dd8a5fc987ccc4",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Native\\Mobile\\Providers\\ShareServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Native\\Mobile\\Providers\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "NativePHP",
+                    "email": "support@nativephp.com"
+                }
+            ],
+            "description": "Native share sheet plugin for NativePHP Mobile",
+            "support": {
+                "issues": "https://github.com/NativePHP/mobile-share/issues",
+                "source": "https://github.com/NativePHP/mobile-share/tree/1.0.1"
+            },
+            "time": "2026-03-20T22:08:33+00:00"
         },
         {
             "name": "nesbot/carbon",

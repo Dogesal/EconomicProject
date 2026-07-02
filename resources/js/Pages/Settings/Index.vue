@@ -13,6 +13,7 @@ import CategoryForm from './Partials/CategoryForm.vue';
 import PinForm from './Partials/PinForm.vue';
 import RecurringForm from './Partials/RecurringForm.vue';
 import RecurringListItem from './Partials/RecurringListItem.vue';
+import { isNativeApp } from '@/native/bridge';
 
 const props = defineProps({
     displayCurrency: { type: String, default: 'PEN' },
@@ -68,6 +69,9 @@ const onPinSaved = () => {
 
 const currencyForm = useForm({ display_currency: props.displayCurrency });
 const saveCurrency = () => currencyForm.put('/settings/currency', { preserveScroll: true });
+
+const onDevice = isNativeApp();
+const shareBackup = () => router.post('/settings/backup/share', {}, { preserveScroll: true });
 
 const sheetOpen = ref(false);
 const deleting = ref(null);
@@ -171,13 +175,16 @@ const confirmCategoryDelete = () => {
 
     <AppCard class="mb-6">
         <h2 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Respaldo</h2>
-        <p class="mb-3 text-xs text-slate-400 dark:text-slate-500">Descargá una copia de todos tus datos (archivo SQLite).</p>
-        <a
-            href="/settings/backup"
-            class="inline-block rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300"
-        >
-            Descargar respaldo
-        </a>
+        <p class="mb-3 text-xs text-slate-400 dark:text-slate-500">Guardá o enviá una copia de todos tus datos (archivo SQLite).</p>
+        <div class="flex gap-2">
+            <a
+                href="/settings/backup"
+                class="inline-block rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300"
+            >
+                Descargar
+            </a>
+            <BaseButton v-if="onDevice" variant="secondary" @click="shareBackup">Compartir…</BaseButton>
+        </div>
     </AppCard>
 
     <section class="mb-6">

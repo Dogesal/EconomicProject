@@ -11,9 +11,12 @@ use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Infrastructure\Repositories\Contracts\TransactionRepository;
 use App\Support\DisplayCurrency;
 use App\Support\MoneyConverter;
+use App\Support\ReminderScheduler;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class DashboardController extends Controller
 {
@@ -23,9 +26,17 @@ class DashboardController extends Controller
         GenerateDueRecurringTransactions $recurring,
         DisplayCurrency $displayCurrency,
         MoneyConverter $converter,
+        ReminderScheduler $reminders,
     ): Response {
         // No always-on scheduler on-device: catch up recurring transactions on open.
         $recurring->handle();
+
+        // Re-sync local notification reminders; never let it break the dashboard.
+        try {
+            $reminders->schedule();
+        } catch (Throwable $e) {
+            Log::warning('Reminder scheduling failed: '.$e->getMessage());
+        }
 
         $totals = $accounts->totalsByCurrency();
         $display = $displayCurrency->resolve();

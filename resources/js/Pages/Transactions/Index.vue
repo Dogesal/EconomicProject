@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import AppCard from '@/Components/AppCard.vue';
 import BaseButton from '@/Components/BaseButton.vue';
 import BottomSheet from '@/Components/BottomSheet.vue';
@@ -51,6 +51,13 @@ const confirmDelete = () => {
         },
     });
 };
+
+onMounted(() => {
+    // Home-screen quick action "Nuevo gasto" lands here with ?new=1.
+    if (new URL(window.location.href).searchParams.get('new') === '1' && props.accounts.length) {
+        openCreate();
+    }
+});
 </script>
 
 <template>

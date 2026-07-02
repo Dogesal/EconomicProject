@@ -8,10 +8,14 @@
     "require": {
         "php": "^8.3",
         "economia/mobile-biometrics": "*@dev",
+        "ikromjon/nativephp-mobile-local-notifications": "^1.9",
         "inertiajs/inertia-laravel": "^3.1",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
+        "matildevoldsen/quick-actions": "^1.0",
         "nativephp/mobile": "^3.3",
+        "nativephp/mobile-file": "^1.0",
+        "nativephp/mobile-share": "^1.0",
         "spatie/laravel-data": "^4.23",
         "tightenco/ziggy": "^2.6"
     },
