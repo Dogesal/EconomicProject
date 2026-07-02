@@ -154,6 +154,79 @@ class TransactionHttpTest extends TestCase
         $this->assertSame(-50000, $account->fresh()->current_balance->minorUnits);
     }
 
+    public function test_deleting_an_income_that_was_already_spent_is_rejected(): void
+    {
+        $account = Account::factory()->withInitialBalance(0)->create();
+        $income = Transaction::factory()->income()->amount(5000)->for($account)->create();
+        Transaction::factory()->expense()->amount(4000)->for($account)->create();
+        $account->recalculateBalance();
+
+        // Balance is 1000; removing the 5000 income would leave -4000.
+        $this->delete(route('transactions.destroy', $income))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNotSoftDeleted($income);
+        $this->assertSame(100000, $account->fresh()->current_balance->minorUnits);
+    }
+
+    public function test_deleting_an_unspent_income_still_works(): void
+    {
+        $account = Account::factory()->withInitialBalance(1000)->create();
+        $income = Transaction::factory()->income()->amount(500)->for($account)->create();
+        $account->recalculateBalance();
+
+        $this->delete(route('transactions.destroy', $income))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSoftDeleted($income);
+    }
+
+    public function test_lowering_an_income_that_was_already_spent_is_rejected(): void
+    {
+        $account = Account::factory()->withInitialBalance(0)->create();
+        $income = Transaction::factory()->income()->amount(5000)->for($account)->create();
+        Transaction::factory()->expense()->amount(4000)->for($account)->create();
+        $account->recalculateBalance();
+
+        // Balance 1000: the income can drop to 4000 (balance 0) but not below.
+        $this->put(route('transactions.update', $income), [
+            'amount' => 3000,
+            'occurred_on' => '2026-06-15',
+        ])->assertSessionHasErrors('amount');
+
+        $this->put(route('transactions.update', $income), [
+            'amount' => 4000,
+            'occurred_on' => '2026-06-15',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+    }
+
+    public function test_deleting_a_transfer_whose_destination_spent_the_money_is_rejected(): void
+    {
+        $from = Account::factory()->withInitialBalance(1000)->create();
+        $to = Account::factory()->withInitialBalance(0)->create();
+
+        $this->post(route('transfers.store'), [
+            'from_account_id' => $from->id,
+            'to_account_id' => $to->id,
+            'amount' => 500,
+            'occurred_on' => '2026-06-15',
+        ]);
+
+        Transaction::factory()->expense()->amount(400)->for($to)->create();
+        $to->recalculateBalance();
+
+        $incomingLeg = $to->transactions()->where('is_inflow', true)->sole();
+
+        // Destination has 100 left of the 500 received: deleting would leave -400.
+        $this->delete(route('transactions.destroy', $incomingLeg))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNotSoftDeleted($incomingLeg);
+    }
+
     public function test_it_deletes_a_transaction(): void
     {
         $account = Account::factory()->withInitialBalance(1000)->create();

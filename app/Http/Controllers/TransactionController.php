@@ -20,6 +20,7 @@ use App\Infrastructure\Repositories\Contracts\TransactionRepository;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class TransactionController extends Controller
 {
@@ -73,7 +74,11 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction, DeleteTransaction $delete): RedirectResponse
     {
-        $delete->handle($transaction);
+        try {
+            $delete->handle($transaction);
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Movimiento eliminado.');
     }

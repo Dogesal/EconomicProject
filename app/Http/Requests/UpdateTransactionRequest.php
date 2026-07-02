@@ -42,20 +42,41 @@ class UpdateTransactionRequest extends FormRequest
 
                 /** @var Transaction $transaction */
                 $transaction = $this->route('transaction');
+                $account = $transaction->account;
 
-                if ($transaction->type !== TransactionType::Expense || $transaction->account === null) {
+                if ($account === null) {
                     return;
                 }
 
-                // Editing an expense frees up its own current amount first.
-                $available = $transaction->account->current_balance->minorUnits + $transaction->amount->minorUnits;
                 $amount = Money::fromDecimal($this->input('amount'), $transaction->currency);
 
-                if ($amount->minorUnits > $available) {
-                    $validator->errors()->add(
-                        'amount',
-                        'Saldo insuficiente en la cuenta ('.Money::fromMinor($available, $transaction->currency)->format().' disponibles).'
-                    );
+                if ($transaction->type === TransactionType::Expense) {
+                    // Editing an expense frees up its own current amount first.
+                    $available = $account->current_balance->minorUnits + $transaction->amount->minorUnits;
+
+                    if ($amount->minorUnits > $available) {
+                        $validator->errors()->add(
+                            'amount',
+                            'Saldo insuficiente en la cuenta ('.Money::fromMinor($available, $transaction->currency)->format().' disponibles).'
+                        );
+                    }
+
+                    return;
+                }
+
+                if ($transaction->type === TransactionType::Income) {
+                    // Lowering an income cannot leave the account in the red:
+                    // balance' = balance - old + new must stay >= 0.
+                    $resulting = $account->current_balance->minorUnits
+                        - $transaction->amount->minorUnits
+                        + $amount->minorUnits;
+
+                    if ($resulting < 0) {
+                        $validator->errors()->add(
+                            'amount',
+                            'Ese monto dejaría la cuenta en negativo: ya gastaste parte de este ingreso.'
+                        );
+                    }
                 }
             },
         ];
