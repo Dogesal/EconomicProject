@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Reports\ExpensesForCategory;
 use App\Application\Reports\MonthlyEvolution;
 use App\Application\Reports\SpendingByCategory;
 use App\Data\MoneyData;
@@ -15,6 +16,7 @@ class ReportController extends Controller
     public function __invoke(
         SpendingByCategory $spending,
         MonthlyEvolution $evolution,
+        ExpensesForCategory $expenses,
         AccountRepository $accounts,
         DisplayCurrency $currency,
     ): Response {
@@ -30,6 +32,9 @@ class ReportController extends Controller
             'netWorth' => $accounts->totalsByCurrency()
                 ->map(fn ($money) => MoneyData::fromMoney($money))
                 ->values(),
+            'categoryExpenses' => Inertia::optional(fn () => request()->filled('drill_category')
+                ? $expenses->handle(request()->string('drill_category')->toString(), $year, $month, $displayCurrency)
+                : null),
         ]);
     }
 }

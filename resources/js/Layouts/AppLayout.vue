@@ -93,7 +93,7 @@ const navItems = [
     { label: 'Inicio', route: 'dashboard', href: '/', icon: 'M3 12l9-9 9 9M5 10v10h14V10' },
     { label: 'Movimientos', route: 'transactions.index', href: '/transactions', icon: 'M4 7h16M4 12h16M4 17h10' },
     { label: 'Presupuestos', route: 'budgets.index', href: '/budgets', icon: 'M4 4h16v16H4zM4 10h16' },
-    { label: 'Reportes', route: 'reports.index', href: '/reports', icon: 'M4 20V10M10 20V4M16 20v-6M22 20H2' },
+    { label: 'Reportes', route: 'reports.index', href: '/reports', match: ['/reports', '/statistics'], icon: 'M4 20V10M10 20V4M16 20v-6M22 20H2' },
     { label: 'Metas', route: 'goals.index', href: '/goals', match: ['/goals', '/debts'], icon: 'M12 2v20M2 12h20' },
     { label: 'Ajustes', route: 'settings.index', href: '/settings', icon: 'M10.3 3.3a2 2 0 013.4 0M12 8a4 4 0 100 8 4 4 0 000-8z' },
 ];

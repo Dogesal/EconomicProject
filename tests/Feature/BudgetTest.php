@@ -64,4 +64,28 @@ class BudgetTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('budgets', ['category_id' => $category->id, 'period_month' => 6]);
     }
+
+    public function test_it_recreates_a_budget_after_deleting_it(): void
+    {
+        $category = Category::factory()->expense()->create();
+        Account::factory()->currency('ARS')->create();
+        $budget = Budget::factory()->for($category)->forPeriod(2026, 6)->amount(20000)->create();
+
+        $budget->delete();
+
+        $response = $this->post(route('budgets.store'), [
+            'category_id' => $category->id,
+            'amount' => 25000,
+            'period_year' => 2026,
+            'period_month' => 6,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('budgets', [
+            'id' => $budget->id,
+            'amount' => 2500000,
+            'deleted_at' => null,
+        ]);
+    }
 }

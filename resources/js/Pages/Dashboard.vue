@@ -3,6 +3,10 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppCard from '@/Components/AppCard.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 import TransactionListItem from '@/Components/TransactionListItem.vue';
+import BudgetHighlights from './Dashboard/Partials/BudgetHighlights.vue';
+import GoalsDebtsCard from './Dashboard/Partials/GoalsDebtsCard.vue';
+import MonthSummaryCard from './Dashboard/Partials/MonthSummaryCard.vue';
+import UpcomingRecurringList from './Dashboard/Partials/UpcomingRecurringList.vue';
 
 defineProps({
     appName: { type: String, default: 'Mi Economía' },
@@ -11,6 +15,12 @@ defineProps({
     convertedTotal: { type: Object, default: null },
     accounts: { type: Array, default: () => [] },
     recentTransactions: { type: Array, default: () => [] },
+    monthSummary: { type: Object, default: null },
+    topSpending: { type: Array, default: () => [] },
+    budgets: { type: Array, default: () => [] },
+    goals: { type: Array, default: () => [] },
+    debtSummary: { type: Object, default: () => ({ iOwe: [], owedToMe: [], overdueCount: 0 }) },
+    upcomingRecurring: { type: Array, default: () => [] },
 });
 </script>
 
@@ -39,23 +49,33 @@ defineProps({
         </Link>
     </section>
 
+    <MonthSummaryCard :summary="monthSummary" :top-spending="topSpending" />
+
+    <BudgetHighlights :budgets="budgets" />
+
     <section class="mt-6">
         <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cuentas</h2>
-        <div class="grid grid-cols-2 gap-3">
-            <AppCard v-for="account in accounts" :key="account.id" class="relative overflow-hidden">
+        <div v-if="accounts.length" class="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
+            <AppCard
+                v-for="account in accounts"
+                :key="account.id"
+                class="relative w-40 shrink-0 snap-start overflow-hidden"
+            >
                 <span
                     class="absolute inset-y-0 left-0 w-1"
                     :style="{ backgroundColor: account.color || '#4f46e5' }"
                 />
                 <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ account.name }}</p>
                 <p class="text-xs text-slate-400 dark:text-slate-500">{{ account.typeLabel }}</p>
-                <p class="mt-2 font-semibold text-slate-900 dark:text-slate-100">{{ account.currentBalance.formatted }}</p>
+                <p class="mt-2 truncate font-semibold text-slate-900 dark:text-slate-100">{{ account.currentBalance.formatted }}</p>
             </AppCard>
-            <p v-if="!accounts.length" class="col-span-2 text-sm text-slate-400 dark:text-slate-500">
-                Todavía no cargaste cuentas.
-            </p>
         </div>
+        <p v-else class="text-sm text-slate-400 dark:text-slate-500">Todavía no cargaste cuentas.</p>
     </section>
+
+    <GoalsDebtsCard :goals="goals" :debt-summary="debtSummary" />
+
+    <UpcomingRecurringList :recurring="upcomingRecurring" />
 
     <section class="mt-6">
         <div class="mb-2 flex items-center justify-between">

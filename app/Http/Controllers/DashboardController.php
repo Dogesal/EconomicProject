@@ -2,16 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Budgets\CalculateBudgetConsumption;
+use App\Application\Debts\SummarizeOutstandingDebts;
 use App\Application\Recurring\GenerateDueRecurringTransactions;
+use App\Application\Reports\MonthlyEvolution;
+use App\Application\Reports\SpendingByCategory;
 use App\Data\AccountData;
+use App\Data\GoalData;
 use App\Data\MoneyData;
+use App\Data\RecurringTransactionData;
 use App\Data\TransactionData;
+use App\Domain\Enums\DebtStatus;
+use App\Domain\Enums\GoalStatus;
+use App\Domain\Models\Debt;
+use App\Domain\Models\RecurringTransaction;
+use App\Domain\Models\SavingsGoal;
 use App\Domain\ValueObjects\Money;
 use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Infrastructure\Repositories\Contracts\TransactionRepository;
 use App\Support\DisplayCurrency;
 use App\Support\MoneyConverter;
 use App\Support\ReminderScheduler;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -27,6 +39,10 @@ class DashboardController extends Controller
         DisplayCurrency $displayCurrency,
         MoneyConverter $converter,
         ReminderScheduler $reminders,
+        CalculateBudgetConsumption $consumption,
+        MonthlyEvolution $evolution,
+        SpendingByCategory $spending,
+        SummarizeOutstandingDebts $summarizeDebts,
     ): Response {
         // No always-on scheduler on-device: catch up recurring transactions on open.
         $recurring->handle();
@@ -40,13 +56,38 @@ class DashboardController extends Controller
 
         $totals = $accounts->totalsByCurrency();
         $display = $displayCurrency->resolve();
+        $year = (int) now()->year;
+        $month = (int) now()->month;
 
         return Inertia::render('Dashboard', [
             'displayCurrency' => $display,
             'totals' => $totals->map(fn ($money) => MoneyData::fromMoney($money))->values(),
             'convertedTotal' => MoneyData::fromMoney($this->convertedTotal($totals, $display, $converter)),
             'accounts' => AccountData::collect($accounts->allActive()),
-            'recentTransactions' => TransactionData::collect($transactions->recent()),
+            'recentTransactions' => TransactionData::collect($transactions->recent(5)),
+            'monthSummary' => $evolution->handle($display, monthsBack: 1)->first(),
+            'topSpending' => $spending->handle($year, $month, $display)->take(3)->values(),
+            'budgets' => $consumption->handle($year, $month)
+                ->sortByDesc('percentage')
+                ->take(4)
+                ->values(),
+            'goals' => GoalData::collect(
+                SavingsGoal::with('account')
+                    ->where('status', GoalStatus::Active)
+                    ->orderByDesc('created_at')
+                    ->take(3)
+                    ->get()
+            ),
+            'debtSummary' => $summarizeDebts->handle(Debt::where('status', DebtStatus::Active)->get()),
+            'upcomingRecurring' => RecurringTransactionData::collect(
+                RecurringTransaction::with('account')
+                    ->where(fn (Builder $query) => $query
+                        ->whereNull('end_on')
+                        ->orWhereColumn('next_run_on', '<=', 'end_on'))
+                    ->orderBy('next_run_on')
+                    ->take(3)
+                    ->get()
+            ),
         ]);
     }
 

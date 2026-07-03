@@ -11,6 +11,7 @@ use App\Http\Controllers\LockController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransferController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,7 @@ Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store
 Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
 Route::get('/reports', ReportController::class)->name('reports.index');
+Route::get('/statistics', StatisticsController::class)->name('statistics.index');
 
 Route::get('/goals', [GoalController::class, 'index'])->name('goals.index');
 Route::post('/goals', [GoalController::class, 'store'])->name('goals.store');

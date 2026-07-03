@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Budgets\CalculateBudgetConsumption;
 use App\Application\Budgets\CreateBudget;
+use App\Application\Reports\ExpensesForCategory;
 use App\Data\CategoryData;
 use App\Domain\Enums\CategoryType;
 use App\Domain\Models\Budget;
@@ -17,18 +18,22 @@ use Inertia\Response;
 
 class BudgetController extends Controller
 {
-    public function index(CalculateBudgetConsumption $consumption, DisplayCurrency $currency): Response
+    public function index(CalculateBudgetConsumption $consumption, ExpensesForCategory $expenses, DisplayCurrency $currency): Response
     {
         $year = (int) request()->integer('year', (int) now()->year);
         $month = (int) request()->integer('month', (int) now()->month);
+        $displayCurrency = $currency->resolve();
 
         return Inertia::render('Budgets/Index', [
             'period' => ['year' => $year, 'month' => $month],
-            'currency' => $currency->resolve(),
+            'currency' => $displayCurrency,
             'consumption' => $consumption->handle($year, $month),
             'expenseCategories' => CategoryData::collect(
                 Category::where('type', CategoryType::Expense)->orderBy('name')->get()
             ),
+            'categoryExpenses' => Inertia::optional(fn () => request()->filled('drill_category')
+                ? $expenses->handle(request()->string('drill_category')->toString(), $year, $month, $displayCurrency)
+                : null),
         ]);
     }
 

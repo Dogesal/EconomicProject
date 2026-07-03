@@ -14,7 +14,7 @@ class CreateBudget
 {
     public function handle(Category $category, int $year, int $month, Money $amount): Budget
     {
-        return Budget::updateOrCreate(
+        $budget = Budget::withTrashed()->updateOrCreate(
             [
                 'category_id' => $category->id,
                 'period_year' => $year,
@@ -25,5 +25,11 @@ class CreateBudget
                 'currency' => $amount->currency,
             ],
         );
+
+        if ($budget->trashed()) {
+            $budget->restore();
+        }
+
+        return $budget;
     }
 }
