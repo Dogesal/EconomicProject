@@ -10,8 +10,12 @@ use App\Domain\Models\Category;
 use App\Domain\Models\Debt;
 use App\Domain\Models\RecurringTransaction;
 use App\Domain\Models\SavingsGoal;
+use App\Domain\Models\Setting;
 use App\Domain\ValueObjects\Money;
+use App\Support\WhatsAppLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -60,5 +64,44 @@ class DashboardTest extends TestCase
                 ->has('upcomingRecurring', 0)
                 ->where('debtSummary.overdueCount', 0)
             );
+    }
+
+    public function test_opening_the_dashboard_applies_pending_whatsapp_messages(): void
+    {
+        config(['services.whatsapp_sync.url' => 'https://sync.test']);
+
+        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
+        Setting::put(WhatsAppLink::API_TOKEN_KEY, 'token');
+        Setting::put(WhatsAppLink::LINKED_KEY, '1');
+        Setting::put(WhatsAppLink::DEFAULT_ACCOUNT_KEY, $account->id);
+
+        Http::fake([
+            'https://sync.test/api/messages/pending' => Http::response(['data' => [[
+                'id' => (string) Str::uuid(),
+                'type' => 'expense',
+                'amount' => '100.00',
+                'category_text' => 'comida',
+                'description' => null,
+                'occurred_on' => today()->toDateString(),
+                'raw_text' => 'comida 100 hoy',
+                'received_at' => now()->toIso8601String(),
+            ]]]),
+            'https://sync.test/api/messages/ack' => Http::response(['acked' => 1]),
+        ]);
+
+        $this->get(route('dashboard'))->assertOk();
+
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertSame(90000, $account->fresh()->current_balance->minorUnits);
+    }
+
+    public function test_dashboard_makes_no_network_calls_when_whatsapp_is_not_linked(): void
+    {
+        config(['services.whatsapp_sync.url' => 'https://sync.test']);
+        Http::fake();
+
+        $this->get(route('dashboard'))->assertOk();
+
+        Http::assertNothingSent();
     }
 }

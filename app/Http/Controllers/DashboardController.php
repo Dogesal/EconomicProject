@@ -7,6 +7,7 @@ use App\Application\Debts\SummarizeOutstandingDebts;
 use App\Application\Recurring\GenerateDueRecurringTransactions;
 use App\Application\Reports\MonthlyEvolution;
 use App\Application\Reports\SpendingByCategory;
+use App\Application\WhatsApp\ApplyPendingMessages;
 use App\Data\AccountData;
 use App\Data\GoalData;
 use App\Data\MoneyData;
@@ -43,6 +44,7 @@ class DashboardController extends Controller
         MonthlyEvolution $evolution,
         SpendingByCategory $spending,
         SummarizeOutstandingDebts $summarizeDebts,
+        ApplyPendingMessages $whatsAppSync,
     ): Response {
         // No always-on scheduler on-device: catch up recurring transactions on open.
         $recurring->handle();
@@ -52,6 +54,21 @@ class DashboardController extends Controller
             $reminders->schedule();
         } catch (Throwable $e) {
             Log::warning('Reminder scheduling failed: '.$e->getMessage());
+        }
+
+        // Aplicar movimientos enviados por WhatsApp; nunca debe romper el dashboard.
+        try {
+            $whatsAppResult = $whatsAppSync->handle();
+
+            if ($whatsAppResult->hasChanges()) {
+                session()->flash('success', $this->whatsAppSummary($whatsAppResult->applied, $whatsAppResult->failed));
+            }
+
+            if ($whatsAppResult->needsAccountSetup) {
+                session()->flash('error', 'Tienes movimientos de WhatsApp esperando: elige una cuenta destino en Ajustes.');
+            }
+        } catch (Throwable $e) {
+            Log::warning('WhatsApp sync failed: '.$e->getMessage());
         }
 
         $totals = $accounts->totalsByCurrency();
@@ -89,6 +106,23 @@ class DashboardController extends Controller
                     ->get()
             ),
         ]);
+    }
+
+    private function whatsAppSummary(int $applied, int $failed): string
+    {
+        $parts = [];
+
+        if ($applied > 0) {
+            $parts[] = $applied === 1
+                ? 'Se registró 1 movimiento de WhatsApp'
+                : "Se registraron {$applied} movimientos de WhatsApp";
+        }
+
+        if ($failed > 0) {
+            $parts[] = $failed === 1 ? '1 falló (revisa Ajustes)' : "{$failed} fallaron (revisa Ajustes)";
+        }
+
+        return implode('; ', $parts).'.';
     }
 
     /**

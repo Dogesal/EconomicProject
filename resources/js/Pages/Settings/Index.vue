@@ -13,6 +13,7 @@ import CategoryForm from './Partials/CategoryForm.vue';
 import PinForm from './Partials/PinForm.vue';
 import RecurringForm from './Partials/RecurringForm.vue';
 import RecurringListItem from './Partials/RecurringListItem.vue';
+import WhatsAppCard from './Partials/WhatsAppCard.vue';
 import { isNativeApp } from '@/native/bridge';
 
 const props = defineProps({
@@ -23,6 +24,7 @@ const props = defineProps({
     accounts: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
     recurring: { type: Array, default: () => [] },
+    whatsapp: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -172,6 +174,8 @@ const confirmCategoryDelete = () => {
             </BaseButton>
         </div>
     </AppCard>
+
+    <WhatsAppCard :whatsapp="whatsapp" :accounts="accounts" />
 
     <AppCard class="mb-6">
         <h2 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Respaldo</h2>

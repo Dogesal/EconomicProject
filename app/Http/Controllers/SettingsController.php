@@ -9,10 +9,12 @@ use App\Domain\Models\Category;
 use App\Domain\Models\Currency;
 use App\Domain\Models\RecurringTransaction;
 use App\Domain\Models\Setting;
+use App\Domain\Models\WhatsAppInboxEntry;
 use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Support\AppLock;
 use App\Support\AppTheme;
 use App\Support\DisplayCurrency;
+use App\Support\WhatsAppLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,8 +23,12 @@ use Inertia\Response;
 
 class SettingsController extends Controller
 {
-    public function index(AccountRepository $accounts, DisplayCurrency $displayCurrency, AppLock $lock): Response
-    {
+    public function index(
+        AccountRepository $accounts,
+        DisplayCurrency $displayCurrency,
+        AppLock $lock,
+        WhatsAppLink $whatsAppLink,
+    ): Response {
         return Inertia::render('Settings/Index', [
             'displayCurrency' => $displayCurrency->resolve(),
             'appLockEnabled' => $lock->isEnabled(),
@@ -33,6 +39,15 @@ class SettingsController extends Controller
             'recurring' => RecurringTransactionData::collect(
                 RecurringTransaction::with('account')->orderBy('next_run_on')->get()
             ),
+            'whatsapp' => [
+                'configured' => $whatsAppLink->isConfigured(),
+                'linked' => $whatsAppLink->isLinked(),
+                'defaultAccountId' => $whatsAppLink->defaultAccount()?->id,
+                'botPhone' => $whatsAppLink->botPhone(),
+                'recentInbox' => WhatsAppInboxEntry::orderByDesc('created_at')
+                    ->take(10)
+                    ->get(['id', 'status', 'reason', 'raw_text', 'created_at']),
+            ],
         ]);
     }
 

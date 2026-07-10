@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'whatsapp_sync' => [
+        // Servidor economic-webhook que recibe los mensajes del bot de WhatsApp.
+        'url' => env('WHATSAPP_SYNC_URL'),
+    ],
+
 ];
