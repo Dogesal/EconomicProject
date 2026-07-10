@@ -5,6 +5,7 @@ import AppCard from '@/Components/AppCard.vue';
 import BaseButton from '@/Components/BaseButton.vue';
 import BaseSelect from '@/Components/BaseSelect.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
+import { openExternal } from '@/native/bridge';
 
 const props = defineProps({
     whatsapp: { type: Object, default: () => ({}) },
@@ -63,6 +64,12 @@ const waLink = computed(() => {
     return `https://wa.me/${phone}?text=${encodeURIComponent(`VINCULAR ${linkCode.value.code}`)}`;
 });
 
+const openWhatsApp = () => {
+    if (waLink.value) {
+        openExternal(waLink.value);
+    }
+};
+
 const statusLabel = (entry) => (entry.status === 'applied' ? '✔' : '✖');
 </script>
 
@@ -84,14 +91,14 @@ const statusLabel = (entry) => (entry.status === 'applied' ? '✔' : '✖');
                     <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">El código vence en 10 minutos.</p>
                 </div>
                 <div class="flex gap-2">
-                    <a
+                    <button
                         v-if="waLink"
-                        :href="waLink"
-                        target="_blank"
+                        type="button"
                         class="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                        @click="openWhatsApp"
                     >
                         Abrir WhatsApp
-                    </a>
+                    </button>
                     <BaseButton variant="secondary" class="flex-1" :processing="checking" @click="checkLinked">
                         Ya lo envié
                     </BaseButton>

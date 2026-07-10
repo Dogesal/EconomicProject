@@ -1,4 +1,4 @@
-import { Biometrics, On, Off, Events } from '@nativephp/mobile';
+import { Biometrics, Browser, On, Off, Events } from '@nativephp/mobile';
 
 // Event dispatched by our own plugin (economia/mobile-biometrics), which
 // reuses the core event class. The official paid plugin uses the second
@@ -22,6 +22,22 @@ export function isNativeApp() {
     }
 
     return window.__nativephp === true || Boolean(window.NativePHP);
+}
+
+/**
+ * Opens a URL outside the app. The NativePHP webview ignores `target="_blank"`
+ * anchors, so on-device this must go through the Browser bridge (the system
+ * resolves wa.me links straight into WhatsApp). On web it falls back to a
+ * regular new tab.
+ */
+export function openExternal(url) {
+    if (isNativeApp()) {
+        return Promise.resolve(Browser.open(url)).catch(() => {});
+    }
+
+    window.open(url, '_blank', 'noopener');
+
+    return Promise.resolve();
 }
 
 /**
