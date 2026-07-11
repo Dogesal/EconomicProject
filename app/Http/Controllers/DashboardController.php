@@ -7,7 +7,6 @@ use App\Application\Debts\SummarizeOutstandingDebts;
 use App\Application\Recurring\GenerateDueRecurringTransactions;
 use App\Application\Reports\MonthlyEvolution;
 use App\Application\Reports\SpendingByCategory;
-use App\Application\WhatsApp\SyncWhatsApp;
 use App\Data\AccountData;
 use App\Data\GoalData;
 use App\Data\MoneyData;
@@ -45,7 +44,6 @@ class DashboardController extends Controller
         MonthlyEvolution $evolution,
         SpendingByCategory $spending,
         SummarizeOutstandingDebts $summarizeDebts,
-        SyncWhatsApp $whatsAppSync,
     ): Response {
         // No always-on scheduler on-device: catch up recurring transactions on open.
         $recurring->handle();
@@ -57,8 +55,9 @@ class DashboardController extends Controller
             Log::warning('Reminder scheduling failed: '.$e->getMessage());
         }
 
-        // Aplicar movimientos enviados por WhatsApp (throttled; nunca rompe).
-        $whatsAppSync->handle();
+        // El sync de WhatsApp NO corre aquí: sus llamadas de red (timeouts
+        // de 2-3s) bloqueaban el primer render. AppLayout lo dispara async
+        // (POST /whatsapp/sync) apenas monta, en cualquier pantalla.
 
         $totals = $accounts->totalsByCurrency();
         $display = $displayCurrency->resolve();

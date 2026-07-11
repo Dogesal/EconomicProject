@@ -15,7 +15,6 @@ use App\Domain\ValueObjects\Money;
 use App\Support\WhatsAppLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -71,40 +70,14 @@ class DashboardTest extends TestCase
             );
     }
 
-    public function test_opening_the_dashboard_applies_pending_whatsapp_messages(): void
+    public function test_dashboard_never_blocks_on_whatsapp_network_calls(): void
     {
+        // El sync vive en POST /whatsapp/sync (disparado async por el
+        // layout); abrir inicio no debe hacer ninguna llamada de red
+        // aunque WhatsApp esté vinculado.
         config(['services.whatsapp_sync.url' => 'https://sync.test']);
-
-        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
         Setting::put(WhatsAppLink::API_TOKEN_KEY, 'token');
         Setting::put(WhatsAppLink::LINKED_KEY, '1');
-
-        Http::fake([
-            'https://sync.test/api/messages/pending' => Http::response(['data' => [[
-                'id' => (string) Str::uuid(),
-                'type' => 'expense',
-                'amount' => '100.00',
-                'category_text' => 'comida',
-                'account_text' => null,
-                'account_id' => $account->id,
-                'description' => null,
-                'occurred_on' => today()->toDateString(),
-                'raw_text' => 'comida 100 hoy',
-                'received_at' => now()->toIso8601String(),
-            ]]]),
-            'https://sync.test/api/messages/ack' => Http::response(['acked' => 1]),
-            'https://sync.test/api/devices/me/accounts' => Http::response(null, 204),
-        ]);
-
-        $this->get(route('dashboard'))->assertOk();
-
-        $this->assertDatabaseCount('transactions', 1);
-        $this->assertSame(90000, $account->fresh()->current_balance->minorUnits);
-    }
-
-    public function test_dashboard_makes_no_network_calls_when_whatsapp_is_not_linked(): void
-    {
-        config(['services.whatsapp_sync.url' => 'https://sync.test']);
         Http::fake();
 
         $this->get(route('dashboard'))->assertOk();

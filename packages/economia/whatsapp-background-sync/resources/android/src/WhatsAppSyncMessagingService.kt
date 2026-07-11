@@ -157,8 +157,17 @@ class WhatsAppSyncMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // El ícono pequeño Android SIEMPRE lo pinta monocromo (regla del
+        // sistema); el logo a color va como ícono grande y el tinte de
+        // marca colorea la silueta.
+        val largeIcon = runCatching {
+            android.graphics.BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_foreground)
+        }.getOrNull()
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
+            .setLargeIcon(largeIcon)
+            .setColor(0xFF4F46E5.toInt())
             .setContentTitle("WhatsApp · Mi Economía")
             .setContentText(body)
             .setContentIntent(tapIntent)
