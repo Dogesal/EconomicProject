@@ -78,6 +78,21 @@ class WhatsAppSyncTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_force_bypasses_the_throttle(): void
+    {
+        Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
+        $this->linkDevice();
+        $this->fakeServer([]);
+
+        $this->post(route('whatsapp.sync'))->assertRedirect();
+        // El push FCM garantiza mensaje nuevo: fuerza el pull aunque el
+        // throttle siga activo.
+        $this->post(route('whatsapp.sync'), ['force' => 1])->assertRedirect();
+
+        // 2 requests por sync (pull + snapshot): ambos POST llegaron.
+        Http::assertSentCount(4);
+    }
+
     public function test_sync_without_link_makes_no_network_calls(): void
     {
         Http::fake();

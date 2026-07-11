@@ -42,9 +42,27 @@ class WhatsAppSyncMessagingService : FirebaseMessagingService() {
             return
         }
 
-        Log.i(TAG, "whatsapp_pull push received — running headless sync")
+        Log.i(TAG, "whatsapp_pull push received")
 
         val bridge = PHPBridge(applicationContext)
+
+        // App viva (runtime persistente + Activity): el sync corre DENTRO de
+        // la app vía el webview — registra, refresca la pantalla y muestra el
+        // toast, sin pelear con el runtime persistente por la base de datos.
+        val activity = MainActivity.instance
+        if (bridge.nativeIsPersistentRuntimeLive() && activity != null) {
+            Log.i(TAG, "App is alive — triggering in-app sync via webview")
+            activity.runOnUiThread {
+                activity.getWebView().evaluateJavascript(
+                    "window.__syncWhatsApp && window.__syncWhatsApp(true);",
+                    null
+                )
+            }
+            return
+        }
+
+        Log.i(TAG, "App is dead — running headless sync")
+
         val bootstrap = "${bridge.getLaravelPath()}/vendor/nativephp/mobile/bootstrap/android/persistent.php"
 
         if (!File(bootstrap).exists()) {
@@ -53,11 +71,7 @@ class WhatsAppSyncMessagingService : FirebaseMessagingService() {
         }
 
         try {
-            // Si el runtime persistente vive, el proceso ya inicializó PHP;
-            // repetir la init de proceso podría corromper el estado nativo.
-            if (!bridge.nativeIsPersistentRuntimeLive()) {
-                bridge.ensureRuntimeInitialized()
-            }
+            bridge.ensureRuntimeInitialized()
 
             if (bridge.nativeEphemeralBoot(bootstrap) != 0) {
                 Log.e(TAG, "Ephemeral PHP boot failed")

@@ -1,6 +1,13 @@
 {
     "namespace": "WhatsAppBackgroundSync",
-    "bridge_functions": [],
+    "bridge_functions": [
+        {
+            "name": "WhatsAppSync.GetFcmToken",
+            "android": "com.economia.whatsappsync.WhatsAppSyncFunctions.GetFcmToken",
+            "android_params": ["activity"],
+            "description": "Obtiene el token FCM del dispositivo (el core no implementa PushNotification.*)"
+        }
+    ],
     "android": {
         "min_version": 26
     },

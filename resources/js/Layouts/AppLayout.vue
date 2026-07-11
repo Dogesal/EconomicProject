@@ -51,17 +51,19 @@ const relock = () => router.post('/lock/relock', {}, { preserveScroll: false });
 const shouldGuard = () => page.props.appLockEnabled && isNativeApp();
 
 // Aplica los movimientos de WhatsApp pendientes desde cualquier pantalla:
-// al abrir la app y al volver del background. El servidor tiene su propio
-// throttle, este solo evita el POST redundante.
+// al abrir la app, al volver del background y cuando el push FCM llega con
+// la app abierta (el lado nativo invoca window.__syncWhatsApp(true), con
+// force porque el push garantiza que hay un mensaje nuevo esperando). El
+// POST recarga las props de la página, así el movimiento aparece al toque.
 const WHATSAPP_SYNC_THROTTLE_MS = 60000;
 
-const syncWhatsApp = () => {
-    if (Date.now() - lastWhatsAppSyncAt < WHATSAPP_SYNC_THROTTLE_MS) {
+const syncWhatsApp = (force = false) => {
+    if (!force && Date.now() - lastWhatsAppSyncAt < WHATSAPP_SYNC_THROTTLE_MS) {
         return;
     }
 
     lastWhatsAppSyncAt = Date.now();
-    router.post('/whatsapp/sync', {}, { preserveScroll: true, preserveState: true });
+    router.post('/whatsapp/sync', { force: force ? 1 : 0 }, { preserveScroll: true, preserveState: true });
 };
 
 onMounted(() => {
@@ -87,6 +89,7 @@ onMounted(() => {
         }
     }
 
+    window.__syncWhatsApp = syncWhatsApp;
     syncWhatsApp();
 
     const onVisibilityChange = () => {

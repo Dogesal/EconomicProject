@@ -3,11 +3,11 @@
 namespace App\Application\WhatsApp;
 
 use App\Domain\Models\Setting;
+use App\Infrastructure\Http\WebhookServerClient;
 use App\Support\WhatsAppLink;
 use App\Support\WhatsAppSyncNotifier;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Native\Mobile\Facades\PushNotifications;
 use Throwable;
 
 /**
@@ -23,21 +23,26 @@ class SyncWhatsApp
 
     private const THROTTLE_KEY = 'whatsapp_last_sync';
 
-    private const PUSH_ENROLLED_KEY = 'whatsapp_push_enrolled';
+    private const FCM_TOKEN_KEY = 'whatsapp_fcm_token';
 
     public function __construct(
         private readonly ApplyPendingMessages $applyPendingMessages,
         private readonly WhatsAppSyncNotifier $notifier,
         private readonly WhatsAppLink $link,
+        private readonly WebhookServerClient $client,
     ) {}
 
-    public function handle(): void
+    /**
+     * @param  bool  $force  Salta el throttle: el push FCM garantiza que hay
+     *                       un mensaje nuevo esperando en el servidor.
+     */
+    public function handle(bool $force = false): void
     {
         if (! $this->link->isConfigured() || ! $this->link->isLinked()) {
             return;
         }
 
-        if (Cache::has(self::THROTTLE_KEY)) {
+        if (! $force && Cache::has(self::THROTTLE_KEY)) {
             return;
         }
 
@@ -55,7 +60,7 @@ class SyncWhatsApp
             Log::warning('WhatsApp sync failed: '.$e->getMessage());
         }
 
-        $this->enrollPushOnce();
+        $this->syncFcmToken();
     }
 
     private function summary(int $applied, int $failed): string
@@ -76,21 +81,31 @@ class SyncWhatsApp
     }
 
     /**
-     * Genera el token FCM una sola vez para dispositivos que se vincularon
-     * antes de que existiera el push. StorePushToken lo sube al servidor
-     * cuando llega TokenGenerated.
+     * Obtiene el token FCM vía el bridge del plugin propio (el core de
+     * NativePHP expone PushNotifications::enroll() pero el scaffold no
+     * implementa ningún bridge PushNotification.*, así que ese camino
+     * falla en silencio) y lo sube al servidor. Se cachea el último token
+     * subido para no repetir el PUT en cada sync; si rota, se re-sube solo.
      */
-    private function enrollPushOnce(): void
+    private function syncFcmToken(): void
     {
-        if (! function_exists('nativephp_call') || Setting::get(self::PUSH_ENROLLED_KEY) === '1') {
+        if (! function_exists('nativephp_call')) {
             return;
         }
 
         try {
-            PushNotifications::enroll();
-            Setting::put(self::PUSH_ENROLLED_KEY, '1');
+            $result = json_decode((string) nativephp_call('WhatsAppSync.GetFcmToken', '{}'), true);
+            $token = is_array($result) ? ($result['token'] ?? null) : null;
+
+            if (! is_string($token) || $token === '' || Setting::get(self::FCM_TOKEN_KEY) === $token) {
+                return;
+            }
+
+            $this->client->updateFcmToken($token);
+            Setting::put(self::FCM_TOKEN_KEY, $token);
+            Log::info('WhatsApp FCM token uploaded.');
         } catch (Throwable $e) {
-            Log::info('Push enroll skipped: '.$e->getMessage());
+            Log::info('FCM token sync skipped: '.$e->getMessage());
         }
     }
 }
