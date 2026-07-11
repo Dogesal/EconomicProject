@@ -7,7 +7,6 @@ final class ApplyResult
     public function __construct(
         public readonly int $applied = 0,
         public readonly int $failed = 0,
-        public readonly bool $needsAccountSetup = false,
     ) {}
 
     public static function empty(): self

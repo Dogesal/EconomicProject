@@ -55,9 +55,9 @@ Route::put('/settings/pin', [SettingsController::class, 'updatePin'])->name('set
 Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
 Route::get('/settings/backup', [BackupController::class, 'download'])->name('settings.backup');
 Route::post('/settings/backup/share', [BackupController::class, 'share'])->name('settings.backup.share');
+Route::post('/settings/backup/restore', [BackupController::class, 'restore'])->name('settings.backup.restore');
 Route::post('/settings/whatsapp/link', [WhatsAppSettingsController::class, 'link'])->name('settings.whatsapp.link');
 Route::post('/settings/whatsapp/refresh', [WhatsAppSettingsController::class, 'refresh'])->name('settings.whatsapp.refresh');
-Route::put('/settings/whatsapp/account', [WhatsAppSettingsController::class, 'updateAccount'])->name('settings.whatsapp.account');
 Route::delete('/settings/whatsapp/link', [WhatsAppSettingsController::class, 'unlink'])->name('settings.whatsapp.unlink');
 
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');

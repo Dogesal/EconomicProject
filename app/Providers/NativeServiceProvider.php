@@ -5,8 +5,10 @@ namespace App\Providers;
 use Codingwithrk\DoubleBackToClose\DoubleBackToCloseServiceProvider;
 use Codingwithrk\DoubleBackToClose\Facades\DoubleBackToClose;
 use Economia\MobileBiometrics\MobileBiometricsServiceProvider;
+use Economia\WebViewFileChooser\WebViewFileChooserServiceProvider;
 use Ikromjon\LocalNotifications\LocalNotificationsServiceProvider;
 use Illuminate\Support\ServiceProvider;
+use Native\Mobile\Providers\BrowserServiceProvider;
 use Native\Mobile\Providers\DialogServiceProvider;
 use Native\Mobile\Providers\FileServiceProvider;
 use Native\Mobile\Providers\ShareServiceProvider;
@@ -53,6 +55,9 @@ class NativeServiceProvider extends ServiceProvider
             MobileSplashscreenServiceProvider::class,
             DoubleBackToCloseServiceProvider::class,
             DialogServiceProvider::class,
+            BrowserServiceProvider::class,
+            WebViewFileChooserServiceProvider::class,
+
         ];
     }
 }

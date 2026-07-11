@@ -70,8 +70,9 @@ class WhatsAppSettingsTest extends TestCase
         $this->assertNull(Setting::get(WhatsAppLink::LINKED_KEY));
     }
 
-    public function test_refresh_marks_linked_when_server_confirms(): void
+    public function test_refresh_marks_linked_and_uploads_accounts_snapshot(): void
     {
+        $account = Account::factory()->create(['name' => 'BCP Soles']);
         Setting::put(WhatsAppLink::API_TOKEN_KEY, 'token');
         Http::fake([
             'https://sync.test/api/devices/me' => Http::response([
@@ -79,11 +80,16 @@ class WhatsAppSettingsTest extends TestCase
                 'phone_masked' => '+•••••4321',
                 'linked_at' => now()->toIso8601String(),
             ]),
+            'https://sync.test/api/devices/me/accounts' => Http::response(null, 204),
         ]);
 
         $this->post(route('settings.whatsapp.refresh'))->assertSessionHas('success');
 
         $this->assertSame('1', Setting::get(WhatsAppLink::LINKED_KEY));
+
+        // El bot recibe las cuentas de inmediato para poder preguntar.
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/api/devices/me/accounts')
+            && $request['accounts'][0]['id'] === $account->id);
     }
 
     public function test_refresh_keeps_unlinked_when_code_not_sent_yet(): void
@@ -98,28 +104,17 @@ class WhatsAppSettingsTest extends TestCase
         $this->assertNull(Setting::get(WhatsAppLink::LINKED_KEY));
     }
 
-    public function test_update_account_requires_an_existing_account(): void
-    {
-        $account = Account::factory()->create();
-
-        $this->put(route('settings.whatsapp.account'), ['account_id' => $account->id])
-            ->assertSessionHas('success');
-        $this->assertSame($account->id, Setting::get(WhatsAppLink::DEFAULT_ACCOUNT_KEY));
-
-        $this->put(route('settings.whatsapp.account'), ['account_id' => (string) Str::uuid()])
-            ->assertSessionHasErrors('account_id');
-    }
-
     public function test_unlink_clears_local_state_even_if_server_fails(): void
     {
         Setting::put(WhatsAppLink::API_TOKEN_KEY, 'token');
         Setting::put(WhatsAppLink::LINKED_KEY, '1');
-        Setting::put(WhatsAppLink::DEFAULT_ACCOUNT_KEY, (string) Str::uuid());
+        Setting::put('whatsapp_default_account_id', (string) Str::uuid());
         Http::fake(['https://sync.test/*' => Http::response(null, 500)]);
 
         $this->delete(route('settings.whatsapp.unlink'))->assertSessionHas('success');
 
         $this->assertNull(Setting::get(WhatsAppLink::LINKED_KEY));
-        $this->assertNull(Setting::get(WhatsAppLink::DEFAULT_ACCOUNT_KEY));
+        // La clave heredada de la cuenta destino también se limpia.
+        $this->assertNull(Setting::get('whatsapp_default_account_id'));
     }
 }

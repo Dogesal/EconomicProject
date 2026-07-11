@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Application\WhatsApp\ApplyPendingMessages;
+use App\Domain\Enums\DebtDirection;
 use App\Domain\Models\Account;
 use App\Domain\Models\Category;
+use App\Domain\Models\Debt;
 use App\Domain\Models\Setting;
 use App\Domain\Models\Transaction;
 use App\Domain\Models\WhatsAppInboxEntry;
@@ -27,15 +29,11 @@ class ApplyPendingMessagesTest extends TestCase
         config(['services.whatsapp_sync.url' => 'https://sync.test']);
     }
 
-    private function linkDevice(?Account $defaultAccount = null): void
+    private function linkDevice(): void
     {
         Setting::put(WhatsAppLink::DEVICE_ID_KEY, (string) Str::uuid());
         Setting::put(WhatsAppLink::API_TOKEN_KEY, 'test-token');
         Setting::put(WhatsAppLink::LINKED_KEY, '1');
-
-        if ($defaultAccount !== null) {
-            Setting::put(WhatsAppLink::DEFAULT_ACCOUNT_KEY, $defaultAccount->id);
-        }
     }
 
     /**
@@ -46,6 +44,7 @@ class ApplyPendingMessagesTest extends TestCase
         Http::fake([
             'https://sync.test/api/messages/pending' => Http::response(['data' => $messages]),
             'https://sync.test/api/messages/ack' => Http::response(['acked' => count($messages)]),
+            'https://sync.test/api/devices/me/accounts' => Http::response(null, 204),
         ]);
     }
 
@@ -59,6 +58,8 @@ class ApplyPendingMessagesTest extends TestCase
             'type' => 'expense',
             'amount' => '100.00',
             'category_text' => 'comida',
+            'account_text' => null,
+            'account_id' => null,
             'description' => null,
             'occurred_on' => today()->toDateString(),
             'raw_text' => 'comida 100 hoy',
@@ -70,8 +71,8 @@ class ApplyPendingMessagesTest extends TestCase
     {
         $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
         $category = Category::factory()->expense()->create(['name' => 'Comida']);
-        $this->linkDevice($account);
-        $this->fakeServer([$this->message()]);
+        $this->linkDevice();
+        $this->fakeServer([$this->message(['account_id' => $account->id])]);
 
         $result = app(ApplyPendingMessages::class)->handle();
 
@@ -94,12 +95,13 @@ class ApplyPendingMessagesTest extends TestCase
     {
         $account = Account::factory()->currency('ARS')->withInitialBalance(0)->create();
         Category::factory()->income()->create(['name' => 'Sueldo']);
-        $this->linkDevice($account);
+        $this->linkDevice();
         $this->fakeServer([$this->message([
             'type' => 'income',
             'amount' => '2500.00',
             'category_text' => 'sueldo',
             'raw_text' => 'ingreso sueldo 2500',
+            'account_id' => $account->id,
         ])]);
 
         $result = app(ApplyPendingMessages::class)->handle();
@@ -112,8 +114,12 @@ class ApplyPendingMessagesTest extends TestCase
     public function test_unmatched_category_lands_as_description(): void
     {
         $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
-        $this->linkDevice($account);
-        $this->fakeServer([$this->message(['category_text' => 'tragamonedas', 'raw_text' => '100 tragamonedas'])]);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'category_text' => 'tragamonedas',
+            'raw_text' => '100 tragamonedas',
+            'account_id' => $account->id,
+        ])]);
 
         app(ApplyPendingMessages::class)->handle();
 
@@ -125,8 +131,8 @@ class ApplyPendingMessagesTest extends TestCase
     public function test_insufficient_balance_rejects_and_acks_failed(): void
     {
         $account = Account::factory()->currency('ARS')->withInitialBalance(50)->create();
-        $this->linkDevice($account);
-        $this->fakeServer([$this->message(['amount' => '100.00'])]);
+        $this->linkDevice();
+        $this->fakeServer([$this->message(['amount' => '100.00', 'account_id' => $account->id])]);
 
         $result = app(ApplyPendingMessages::class)->handle();
 
@@ -142,24 +148,114 @@ class ApplyPendingMessagesTest extends TestCase
             && $request['results'][0]['status'] === 'failed');
     }
 
-    public function test_without_default_account_messages_stay_pending_on_server(): void
+    public function test_account_id_routes_transaction_to_that_account(): void
     {
+        $other = Account::factory()->currency('ARS')->withInitialBalance(1000)->create(['name' => 'Efectivo']);
+        $bcp = Account::factory()->currency('ARS')->withInitialBalance(500)->create(['name' => 'BCP Soles']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'account_id' => $bcp->id,
+            'account_text' => 'BCP Soles',
+            'raw_text' => 'comida 100 cuenta bcp',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertSame($bcp->id, Transaction::sole()->account_id);
+        $this->assertSame(40000, $bcp->fresh()->current_balance->minorUnits);
+        $this->assertSame(100000, $other->fresh()->current_balance->minorUnits);
+    }
+
+    public function test_unknown_account_id_falls_back_to_account_text(): void
+    {
+        $bcp = Account::factory()->currency('ARS')->withInitialBalance(500)->create(['name' => 'BCP Soles']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            // Un id que ya no existe en la app (p.ej. cuenta recreada).
+            'account_id' => (string) Str::uuid(),
+            'account_text' => 'bcp',
+            'raw_text' => 'comida 100 cuenta bcp',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertSame($bcp->id, Transaction::sole()->account_id);
+    }
+
+    public function test_unknown_account_text_fails_with_reason(): void
+    {
+        Account::factory()->currency('ARS')->withInitialBalance(1000)->create(['name' => 'Efectivo']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'account_text' => 'interbank',
+            'raw_text' => 'comida 100 cuenta interbank',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->failed);
+        $this->assertDatabaseCount('transactions', 0);
+
+        $entry = WhatsAppInboxEntry::sole();
+        $this->assertSame(WhatsAppInboxEntry::STATUS_FAILED, $entry->status);
+        $this->assertStringContainsString('interbank', $entry->reason);
+    }
+
+    public function test_message_without_account_fails_with_reason(): void
+    {
+        Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
         $this->linkDevice();
         $this->fakeServer([$this->message()]);
 
         $result = app(ApplyPendingMessages::class)->handle();
 
-        $this->assertTrue($result->needsAccountSetup);
+        $this->assertSame(1, $result->failed);
         $this->assertDatabaseCount('transactions', 0);
-        $this->assertDatabaseCount('whatsapp_inbox', 0);
 
-        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/messages/ack'));
+        $entry = WhatsAppInboxEntry::sole();
+        $this->assertSame(WhatsAppInboxEntry::STATUS_FAILED, $entry->status);
+        $this->assertStringContainsString('Elige la cuenta', $entry->reason);
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/messages/ack')
+            && $request['results'][0]['status'] === 'failed');
+    }
+
+    public function test_debt_message_creates_a_debt_without_touching_balances(): void
+    {
+        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'debt',
+            'amount' => '50.00',
+            'category_text' => 'juan',
+            'raw_text' => 'deuda 50 juan',
+            'account_id' => $account->id,
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertSame(100000, $account->fresh()->current_balance->minorUnits);
+
+        $debt = Debt::sole();
+        $this->assertSame('Juan', $debt->name);
+        $this->assertSame(DebtDirection::IOwe, $debt->direction);
+        $this->assertSame(5000, $debt->original_amount->minorUnits);
+        $this->assertSame('ARS', $debt->currency);
+
+        $this->assertSame(WhatsAppInboxEntry::STATUS_APPLIED, WhatsAppInboxEntry::sole()->status);
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/messages/ack')
+            && $request['results'][0]['status'] === 'applied');
     }
 
     public function test_already_seen_messages_are_reacked_without_reapplying(): void
     {
-        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
-        $this->linkDevice($account);
+        Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
+        $this->linkDevice();
 
         $message = $this->message();
         WhatsAppInboxEntry::create([
@@ -181,10 +277,10 @@ class ApplyPendingMessagesTest extends TestCase
     public function test_consecutive_expenses_validate_against_updated_balance(): void
     {
         $account = Account::factory()->currency('ARS')->withInitialBalance(150)->create();
-        $this->linkDevice($account);
+        $this->linkDevice();
         $this->fakeServer([
-            $this->message(['amount' => '100.00']),
-            $this->message(['amount' => '100.00', 'raw_text' => 'taxi 100']),
+            $this->message(['amount' => '100.00', 'account_id' => $account->id]),
+            $this->message(['amount' => '100.00', 'raw_text' => 'taxi 100', 'account_id' => $account->id]),
         ]);
 
         $result = app(ApplyPendingMessages::class)->handle();
@@ -194,10 +290,34 @@ class ApplyPendingMessagesTest extends TestCase
         $this->assertSame(5000, $account->fresh()->current_balance->minorUnits);
     }
 
+    public function test_accounts_snapshot_is_uploaded_after_sync(): void
+    {
+        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create(['name' => 'BCP Soles']);
+        Account::factory()->currency('ARS')->archived()->create(['name' => 'Archivada']);
+        $this->linkDevice();
+        $this->fakeServer([]);
+
+        app(ApplyPendingMessages::class)->handle();
+
+        // Solo las cuentas activas viajan, con su saldo fresco.
+        Http::assertSent(function (Request $request) use ($account): bool {
+            if (! str_ends_with($request->url(), '/api/devices/me/accounts')) {
+                return false;
+            }
+
+            $accounts = $request['accounts'];
+
+            return count($accounts) === 1
+                && $accounts[0]['id'] === $account->id
+                && $accounts[0]['name'] === 'BCP Soles'
+                && $accounts[0]['currency'] === 'ARS';
+        });
+    }
+
     public function test_server_down_returns_empty_result(): void
     {
-        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
-        $this->linkDevice($account);
+        Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
+        $this->linkDevice();
         Http::fake(fn () => throw new ConnectionException('offline'));
 
         $result = app(ApplyPendingMessages::class)->handle();

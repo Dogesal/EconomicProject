@@ -2,22 +2,33 @@
 
 namespace App\Application\WhatsApp;
 
+use App\Application\Debts\CreateDebt;
 use App\Application\Transactions\RecordTransaction;
 use App\Domain\Enums\CategoryType;
+use App\Domain\Enums\DebtDirection;
 use App\Domain\Enums\TransactionType;
+use App\Domain\Models\Account;
 use App\Domain\Models\WhatsAppInboxEntry;
 use App\Domain\ValueObjects\Money;
 use App\Infrastructure\Http\WebhookServerClient;
 use App\Support\WhatsAppLink;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
  * Descarga los movimientos enviados por WhatsApp y los registra localmente.
  * El pull es la fuente de verdad (el push solo despierta a la app). Cada
- * mensaje se confirma al servidor como applied o failed; los que no se
- * pueden procesar todavía (sin cuenta por defecto) quedan pendientes allá.
+ * mensaje se confirma al servidor como applied o failed.
+ *
+ * La cuenta destino llega resuelta por el bot como account_id (con
+ * account_text como fallback para mensajes de un servidor viejo). Al final
+ * de cada sync se sube el snapshot de cuentas y saldos para que el bot
+ * pregunte y valide con datos frescos.
+ *
+ * Soporta tres tipos: income/expense (transacción en la cuenta) y debt
+ * (crea una deuda "Debo" sin tocar saldos).
  */
 class ApplyPendingMessages
 {
@@ -25,7 +36,9 @@ class ApplyPendingMessages
         private readonly WhatsAppLink $link,
         private readonly WebhookServerClient $client,
         private readonly CategoryMatcher $matcher,
+        private readonly AccountMatcher $accounts,
         private readonly RecordTransaction $recordTransaction,
+        private readonly CreateDebt $createDebt,
     ) {}
 
     public function handle(): ApplyResult
@@ -44,14 +57,14 @@ class ApplyPendingMessages
         }
 
         if ($pending === []) {
+            $this->pushAccountsSnapshot();
+
             return ApplyResult::empty();
         }
 
-        $account = $this->link->defaultAccount();
         $acks = [];
         $applied = 0;
         $failed = 0;
-        $needsAccountSetup = false;
 
         foreach ($pending as $message) {
             $seen = WhatsAppInboxEntry::find($message['id']);
@@ -63,10 +76,25 @@ class ApplyPendingMessages
                 continue;
             }
 
+            $account = $this->resolveAccount($message);
+
             if ($account === null) {
-                // Sin ACK: el mensaje espera en el servidor hasta que el
-                // usuario configure la cuenta destino.
-                $needsAccountSetup = true;
+                $accountText = $message['account_text'] ?? null;
+                $reason = $accountText !== null
+                    ? "No encontré la cuenta «{$accountText}» en la app."
+                    : 'Elige la cuenta al registrar por WhatsApp.';
+                $acks[] = $this->recordFailure($message, $reason);
+                $failed++;
+
+                continue;
+            }
+
+            if ($message['type'] === 'debt') {
+                if ($this->applyDebt($message, $account, $acks)) {
+                    $applied++;
+                } else {
+                    $failed++;
+                }
 
                 continue;
             }
@@ -127,7 +155,78 @@ class ApplyPendingMessages
             }
         }
 
-        return new ApplyResult($applied, $failed, $needsAccountSetup);
+        $this->pushAccountsSnapshot();
+
+        return new ApplyResult($applied, $failed);
+    }
+
+    /**
+     * Resuelve la cuenta destino: primero el account_id que el bot ya
+     * resolvió; como fallback el texto libre (mensajes de un servidor
+     * viejo). Las cuentas archivadas no reciben movimientos.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    private function resolveAccount(array $message): ?Account
+    {
+        $accountId = $message['account_id'] ?? null;
+
+        if ($accountId !== null) {
+            $account = Account::find($accountId);
+
+            if ($account !== null && ! $account->is_archived) {
+                return $account;
+            }
+        }
+
+        return $this->accounts->match($message['account_text'] ?? null);
+    }
+
+    /**
+     * Sube cuentas y saldos frescos al servidor para que el bot pregunte
+     * la cuenta destino y valide saldos. Best-effort: sin red no hay ruido.
+     */
+    private function pushAccountsSnapshot(): void
+    {
+        try {
+            $this->client->syncAccounts(AccountsSnapshot::build());
+        } catch (Throwable $e) {
+            Log::info('WhatsApp accounts snapshot skipped: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Crea una deuda "Debo" a partir del mensaje. La cuenta solo aporta la
+     * moneda: las deudas no afectan el saldo hasta que se paguen.
+     *
+     * @param  array<string, mixed>  $message
+     * @param  list<array{id: string, status: string, reason?: ?string}>  $acks
+     */
+    private function applyDebt(array $message, Account $account, array &$acks): bool
+    {
+        $name = trim((string) ($message['category_text'] ?? ''));
+
+        try {
+            $this->createDebt->handle(
+                $name !== '' ? Str::ucfirst($name) : 'Deuda por WhatsApp',
+                DebtDirection::IOwe,
+                Money::fromDecimal($message['amount'], $account->currency),
+            );
+        } catch (Throwable $e) {
+            Log::warning("WhatsApp debt {$message['id']} failed: {$e->getMessage()}");
+            $acks[] = $this->recordFailure($message, 'No se pudo registrar la deuda.');
+
+            return false;
+        }
+
+        WhatsAppInboxEntry::create([
+            'id' => $message['id'],
+            'status' => WhatsAppInboxEntry::STATUS_APPLIED,
+            'raw_text' => $message['raw_text'],
+        ]);
+        $acks[] = ['id' => $message['id'], 'status' => WhatsAppInboxEntry::STATUS_APPLIED];
+
+        return true;
     }
 
     /**

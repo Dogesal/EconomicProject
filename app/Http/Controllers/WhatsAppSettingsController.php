@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\WhatsApp\AccountsSnapshot;
 use App\Infrastructure\Http\WebhookServerClient;
 use App\Support\WhatsAppLink;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Native\Mobile\Facades\PushNotifications;
 use Throwable;
 
@@ -64,6 +63,14 @@ class WhatsAppSettingsController extends Controller
 
         $this->link->markLinked(true);
 
+        // El bot necesita las cuentas desde el primer mensaje: subir el
+        // snapshot inicial sin esperar al próximo sync del dashboard.
+        try {
+            $this->client->syncAccounts(AccountsSnapshot::build());
+        } catch (Throwable) {
+            // El sync del dashboard lo reintentará.
+        }
+
         // En el dispositivo, pedir permiso de notificaciones y generar el
         // token FCM; StorePushToken lo sube cuando llega TokenGenerated.
         if (function_exists('nativephp_call')) {
@@ -71,17 +78,6 @@ class WhatsAppSettingsController extends Controller
         }
 
         return back()->with('success', 'WhatsApp vinculado ('.($status['phone_masked'] ?? '').').');
-    }
-
-    public function updateAccount(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'account_id' => ['required', 'uuid', Rule::exists('accounts', 'id')],
-        ]);
-
-        $this->link->storeDefaultAccount($data['account_id']);
-
-        return back()->with('success', 'Cuenta para movimientos de WhatsApp actualizada.');
     }
 
     public function unlink(): RedirectResponse

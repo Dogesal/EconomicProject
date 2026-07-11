@@ -26,13 +26,17 @@ export function isNativeApp() {
 
 /**
  * Opens a URL outside the app. The NativePHP webview ignores `target="_blank"`
- * anchors, so on-device this must go through the Browser bridge (the system
- * resolves wa.me links straight into WhatsApp). On web it falls back to a
- * regular new tab.
+ * anchors, so on-device this goes through the `Browser.Open` bridge method
+ * (nativephp/mobile-browser plugin) — the system resolves wa.me links straight
+ * into WhatsApp. If the bridge call fails (e.g. plugin missing in an older
+ * build), it falls back to a main-frame navigation, which the WebViewClient
+ * intercepts and hands to the system via ACTION_VIEW. On web it opens a tab.
  */
 export function openExternal(url) {
     if (isNativeApp()) {
-        return Promise.resolve(Browser.open(url)).catch(() => {});
+        return Promise.resolve(Browser.open(url)).catch(() => {
+            window.location.href = url;
+        });
     }
 
     window.open(url, '_blank', 'noopener');

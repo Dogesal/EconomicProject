@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "93744578e148945a0c637919866b3bf0",
+    "content-hash": "8a37c4710e118bf98e915efb7899f073",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -679,6 +679,41 @@
                 "MIT"
             ],
             "description": "Plugin de autenticación biométrica (BiometricPrompt) para Mi Economía",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "economia/webview-file-chooser",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "packages/economia/webview-file-chooser",
+                "reference": "5ce2c3432846ccc985ee964e61f7bbb61e3c2fb2"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Economia\\WebViewFileChooser\\WebViewFileChooserServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Economia\\WebViewFileChooser\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Habilita <input type=\"file\"> en el webview Android (onShowFileChooser) para Mi Economía",
             "transport-options": {
                 "relative": true
             }
@@ -2772,6 +2807,57 @@
                 "source": "https://github.com/NativePHP/mobile-air/tree/3.3.6"
             },
             "time": "2026-06-05T17:27:23+00:00"
+        },
+        {
+            "name": "nativephp/mobile-browser",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/NativePHP/mobile-browser.git",
+                "reference": "68c8ef302632d2ce1018aa86166fabd22962c6a3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/NativePHP/mobile-browser/zipball/68c8ef302632d2ce1018aa86166fabd22962c6a3",
+                "reference": "68c8ef302632d2ce1018aa86166fabd22962c6a3",
+                "shasum": ""
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Native\\Mobile\\Providers\\BrowserServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Native\\Mobile\\Providers\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "NativePHP",
+                    "email": "info@nativephp.com"
+                }
+            ],
+            "description": "Browser functionality for NativePHP Mobile - open URLs in system browser, in-app browser, and OAuth authentication",
+            "support": {
+                "issues": "https://github.com/NativePHP/mobile-browser/issues",
+                "source": "https://github.com/NativePHP/mobile-browser/tree/1.0.1"
+            },
+            "time": "2026-03-20T22:08:33+00:00"
         },
         {
             "name": "nativephp/mobile-dialog",
@@ -10434,7 +10520,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "economia/mobile-biometrics": 20
+        "economia/mobile-biometrics": 20,
+        "economia/webview-file-chooser": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

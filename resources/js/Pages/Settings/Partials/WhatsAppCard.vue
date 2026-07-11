@@ -3,13 +3,11 @@ import { computed, ref } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import AppCard from '@/Components/AppCard.vue';
 import BaseButton from '@/Components/BaseButton.vue';
-import BaseSelect from '@/Components/BaseSelect.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { openExternal } from '@/native/bridge';
 
 const props = defineProps({
     whatsapp: { type: Object, default: () => ({}) },
-    accounts: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -48,15 +46,6 @@ const doUnlink = () => {
         },
     });
 };
-
-const defaultAccountId = computed({
-    get: () => props.whatsapp.defaultAccountId ?? '',
-    set: (value) => {
-        if (value) {
-            router.put('/settings/whatsapp/account', { account_id: value }, { preserveScroll: true });
-        }
-    },
-});
 
 const waLink = computed(() => {
     if (!linkCode.value?.bot_phone) return null;
@@ -111,22 +100,9 @@ const statusLabel = (entry) => (entry.status === 'applied' ? '✔' : '✖');
         <template v-else>
             <p class="mb-3 mt-0.5 text-xs text-slate-400 dark:text-slate-500">
                 Vinculado. Envía “comida 100 hoy” al bot y se registrará al abrir la app.
+                La cuenta se elige en WhatsApp: dila en el mensaje (“comida 100 cuenta bcp”)
+                o el bot te preguntará. También puedes anotar deudas (“deuda 50 juan”).
             </p>
-
-            <div class="mb-3">
-                <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                    Cuenta destino de los movimientos
-                </label>
-                <BaseSelect v-model="defaultAccountId">
-                    <option value="" disabled>Elige una cuenta…</option>
-                    <option v-for="account in accounts" :key="account.id" :value="account.id">
-                        {{ account.name }}
-                    </option>
-                </BaseSelect>
-                <p v-if="!whatsapp.defaultAccountId" class="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                    Sin cuenta destino los mensajes quedan en espera.
-                </p>
-            </div>
 
             <div v-if="whatsapp.recentInbox?.length" class="mb-3">
                 <p class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Últimos mensajes</p>

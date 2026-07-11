@@ -42,7 +42,6 @@ class SettingsController extends Controller
             'whatsapp' => [
                 'configured' => $whatsAppLink->isConfigured(),
                 'linked' => $whatsAppLink->isLinked(),
-                'defaultAccountId' => $whatsAppLink->defaultAccount()?->id,
                 'botPhone' => $whatsAppLink->botPhone(),
                 'recentInbox' => WhatsAppInboxEntry::orderByDesc('created_at')
                     ->take(10)

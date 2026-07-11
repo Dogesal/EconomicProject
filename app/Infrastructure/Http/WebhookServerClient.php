@@ -48,6 +48,17 @@ class WebhookServerClient
     }
 
     /**
+     * Sube el snapshot de cuentas para que el bot pregunte la cuenta
+     * destino y valide saldos al momento del mensaje.
+     *
+     * @param  list<array{id: string, name: string, balance: float, currency: string}>  $accounts
+     */
+    public function syncAccounts(array $accounts): void
+    {
+        $this->authenticated()->put('/api/devices/me/accounts', ['accounts' => $accounts])->throw();
+    }
+
+    /**
      * @return list<array{id: string, type: string, amount: string, category_text: ?string, description: ?string, occurred_on: string, raw_text: string, received_at: ?string}>
      */
     public function pullPending(): array

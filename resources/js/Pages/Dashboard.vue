@@ -6,6 +6,7 @@ import TransactionListItem from '@/Components/TransactionListItem.vue';
 import BudgetHighlights from './Dashboard/Partials/BudgetHighlights.vue';
 import GoalsDebtsCard from './Dashboard/Partials/GoalsDebtsCard.vue';
 import MonthSummaryCard from './Dashboard/Partials/MonthSummaryCard.vue';
+import NetBalanceCard from './Dashboard/Partials/NetBalanceCard.vue';
 import UpcomingRecurringList from './Dashboard/Partials/UpcomingRecurringList.vue';
 
 defineProps({
@@ -13,6 +14,7 @@ defineProps({
     displayCurrency: { type: String, default: 'ARS' },
     totals: { type: Array, default: () => [] },
     convertedTotal: { type: Object, default: null },
+    netBalance: { type: Object, default: null },
     accounts: { type: Array, default: () => [] },
     recentTransactions: { type: Array, default: () => [] },
     monthSummary: { type: Object, default: null },
@@ -48,6 +50,8 @@ defineProps({
             Gestionar cuentas
         </Link>
     </section>
+
+    <NetBalanceCard :net-balance="netBalance" />
 
     <MonthSummaryCard :summary="monthSummary" :top-spending="topSpending" />
 

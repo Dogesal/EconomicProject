@@ -13,6 +13,7 @@ use App\Data\GoalData;
 use App\Data\MoneyData;
 use App\Data\RecurringTransactionData;
 use App\Data\TransactionData;
+use App\Domain\Enums\DebtDirection;
 use App\Domain\Enums\DebtStatus;
 use App\Domain\Enums\GoalStatus;
 use App\Domain\Models\Debt;
@@ -24,6 +25,7 @@ use App\Infrastructure\Repositories\Contracts\TransactionRepository;
 use App\Support\DisplayCurrency;
 use App\Support\MoneyConverter;
 use App\Support\ReminderScheduler;
+use App\Support\WhatsAppSyncNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -45,6 +47,7 @@ class DashboardController extends Controller
         SpendingByCategory $spending,
         SummarizeOutstandingDebts $summarizeDebts,
         ApplyPendingMessages $whatsAppSync,
+        WhatsAppSyncNotifier $whatsAppNotifier,
     ): Response {
         // No always-on scheduler on-device: catch up recurring transactions on open.
         $recurring->handle();
@@ -61,11 +64,9 @@ class DashboardController extends Controller
             $whatsAppResult = $whatsAppSync->handle();
 
             if ($whatsAppResult->hasChanges()) {
-                session()->flash('success', $this->whatsAppSummary($whatsAppResult->applied, $whatsAppResult->failed));
-            }
-
-            if ($whatsAppResult->needsAccountSetup) {
-                session()->flash('error', 'Tienes movimientos de WhatsApp esperando: elige una cuenta destino en Ajustes.');
+                $summary = $this->whatsAppSummary($whatsAppResult->applied, $whatsAppResult->failed);
+                session()->flash('success', $summary);
+                $whatsAppNotifier->notify($summary);
             }
         } catch (Throwable $e) {
             Log::warning('WhatsApp sync failed: '.$e->getMessage());
@@ -76,10 +77,14 @@ class DashboardController extends Controller
         $year = (int) now()->year;
         $month = (int) now()->month;
 
+        $convertedTotal = $this->convertedTotal($totals, $display, $converter);
+        $activeDebts = Debt::where('status', DebtStatus::Active)->get();
+
         return Inertia::render('Dashboard', [
             'displayCurrency' => $display,
             'totals' => $totals->map(fn ($money) => MoneyData::fromMoney($money))->values(),
-            'convertedTotal' => MoneyData::fromMoney($this->convertedTotal($totals, $display, $converter)),
+            'convertedTotal' => MoneyData::fromMoney($convertedTotal),
+            'netBalance' => $this->netBalance($convertedTotal, $activeDebts, $display, $converter),
             'accounts' => AccountData::collect($accounts->allActive()),
             'recentTransactions' => TransactionData::collect($transactions->recent(5)),
             'monthSummary' => $evolution->handle($display, monthsBack: 1)->first(),
@@ -95,7 +100,7 @@ class DashboardController extends Controller
                     ->take(3)
                     ->get()
             ),
-            'debtSummary' => $summarizeDebts->handle(Debt::where('status', DebtStatus::Active)->get()),
+            'debtSummary' => $summarizeDebts->handle($activeDebts),
             'upcomingRecurring' => RecurringTransactionData::collect(
                 RecurringTransaction::with('account')
                     ->where(fn (Builder $query) => $query
@@ -123,6 +128,36 @@ class DashboardController extends Controller
         }
 
         return implode('; ', $parts).'.';
+    }
+
+    /**
+     * Money vs. debt breakdown for the dashboard bar: total money on hand,
+     * outstanding "I owe" debt and the resulting net, all in the display
+     * currency (currencies without an exchange rate are skipped, same as the
+     * converted total). Null when nothing is owed, so the card can hide.
+     *
+     * @param  Collection<int, Debt>  $debts
+     * @return array{available: MoneyData, debts: MoneyData, net: MoneyData}|null
+     */
+    private function netBalance(Money $available, Collection $debts, string $display, MoneyConverter $converter): ?array
+    {
+        $owed = $debts
+            ->filter(fn (Debt $debt) => $debt->direction === DebtDirection::IOwe)
+            ->reduce(function (Money $carry, Debt $debt) use ($display, $converter) {
+                $converted = $converter->tryConvert($debt->remaining(), $display);
+
+                return $converted ? $carry->plus($converted) : $carry;
+            }, Money::zero($display));
+
+        if ($owed->isZero()) {
+            return null;
+        }
+
+        return [
+            'available' => MoneyData::fromMoney($available),
+            'debts' => MoneyData::fromMoney($owed),
+            'net' => MoneyData::fromMoney($available->minus($owed)),
+        ];
     }
 
     /**

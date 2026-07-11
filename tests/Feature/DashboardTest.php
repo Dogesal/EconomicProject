@@ -50,6 +50,10 @@ class DashboardTest extends TestCase
                 ->has('debtSummary.iOwe', 1)
                 ->where('debtSummary.overdueCount', 1)
                 ->has('upcomingRecurring', 1)
+                // 100.000 inicial - 5.000 gasto = 95.000 disponibles; deuda 5.000.
+                ->where('netBalance.available.minorUnits', 9500000)
+                ->where('netBalance.debts.minorUnits', 500000)
+                ->where('netBalance.net.minorUnits', 9000000)
             );
     }
 
@@ -63,6 +67,7 @@ class DashboardTest extends TestCase
                 ->has('goals', 0)
                 ->has('upcomingRecurring', 0)
                 ->where('debtSummary.overdueCount', 0)
+                ->where('netBalance', null)
             );
     }
 
@@ -73,7 +78,6 @@ class DashboardTest extends TestCase
         $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create();
         Setting::put(WhatsAppLink::API_TOKEN_KEY, 'token');
         Setting::put(WhatsAppLink::LINKED_KEY, '1');
-        Setting::put(WhatsAppLink::DEFAULT_ACCOUNT_KEY, $account->id);
 
         Http::fake([
             'https://sync.test/api/messages/pending' => Http::response(['data' => [[
@@ -81,12 +85,15 @@ class DashboardTest extends TestCase
                 'type' => 'expense',
                 'amount' => '100.00',
                 'category_text' => 'comida',
+                'account_text' => null,
+                'account_id' => $account->id,
                 'description' => null,
                 'occurred_on' => today()->toDateString(),
                 'raw_text' => 'comida 100 hoy',
                 'received_at' => now()->toIso8601String(),
             ]]]),
             'https://sync.test/api/messages/ack' => Http::response(['acked' => 1]),
+            'https://sync.test/api/devices/me/accounts' => Http::response(null, 204),
         ]);
 
         $this->get(route('dashboard'))->assertOk();

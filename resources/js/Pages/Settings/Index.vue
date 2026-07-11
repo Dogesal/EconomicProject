@@ -14,7 +14,6 @@ import PinForm from './Partials/PinForm.vue';
 import RecurringForm from './Partials/RecurringForm.vue';
 import RecurringListItem from './Partials/RecurringListItem.vue';
 import WhatsAppCard from './Partials/WhatsAppCard.vue';
-import { isNativeApp } from '@/native/bridge';
 
 const props = defineProps({
     displayCurrency: { type: String, default: 'PEN' },
@@ -72,8 +71,33 @@ const onPinSaved = () => {
 const currencyForm = useForm({ display_currency: props.displayCurrency });
 const saveCurrency = () => currencyForm.put('/settings/currency', { preserveScroll: true });
 
-const onDevice = isNativeApp();
 const shareBackup = () => router.post('/settings/backup/share', {}, { preserveScroll: true });
+
+// Restore flow: pick the .sqlite file first, then confirm the replacement.
+const restoreInput = ref(null);
+const restoreFile = ref(null);
+const restoring = ref(false);
+
+const onRestorePicked = (event) => {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+
+    if (file) {
+        restoreFile.value = file;
+    }
+};
+
+const doRestore = () => {
+    restoring.value = true;
+    router.post('/settings/backup/restore', { backup: restoreFile.value }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onFinish: () => {
+            restoring.value = false;
+            restoreFile.value = null;
+        },
+    });
+};
 
 const sheetOpen = ref(false);
 const deleting = ref(null);
@@ -175,19 +199,17 @@ const confirmCategoryDelete = () => {
         </div>
     </AppCard>
 
-    <WhatsAppCard :whatsapp="whatsapp" :accounts="accounts" />
+    <WhatsAppCard :whatsapp="whatsapp" />
 
     <AppCard class="mb-6">
         <h2 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Respaldo</h2>
         <p class="mb-3 text-xs text-slate-400 dark:text-slate-500">Guardá o enviá una copia de todos tus datos (archivo SQLite).</p>
-        <div class="flex gap-2">
-            <a
-                href="/settings/backup"
-                class="inline-block rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300"
-            >
-                Descargar
-            </a>
-            <BaseButton v-if="onDevice" variant="secondary" @click="shareBackup">Compartir…</BaseButton>
+        <div class="flex flex-wrap gap-2">
+            <!-- El webview nativo ignora respuestas de descarga, así que el
+                 respaldo sale por el share sheet (guardar/enviar). -->
+            <BaseButton @click="shareBackup">Guardar o compartir…</BaseButton>
+            <BaseButton variant="secondary" @click="restoreInput?.click()">Restaurar…</BaseButton>
+            <input ref="restoreInput" type="file" accept=".sqlite,application/octet-stream" class="hidden" @change="onRestorePicked" />
         </div>
     </AppCard>
 
@@ -286,5 +308,14 @@ const confirmCategoryDelete = () => {
         :processing="deleteProcessing"
         @confirm="confirmDelete"
         @cancel="deleting = null"
+    />
+
+    <ConfirmDialog
+        :open="restoreFile !== null"
+        title="Restaurar respaldo"
+        :message="restoreFile ? `Se reemplazarán TODOS tus datos actuales por los de “${restoreFile.name}”. Se guardará una copia previa en el dispositivo.` : ''"
+        :processing="restoring"
+        @confirm="doRestore"
+        @cancel="restoreFile = null"
     />
 </template>

@@ -1,0 +1,13 @@
+{
+    "namespace": "WebViewFileChooser",
+    "bridge_functions": [],
+    "android": {
+        "min_version": 23
+    },
+    "ios": {
+        "min_version": "18.2"
+    },
+    "hooks": {
+        "pre_compile": "nativephp:webview-file-chooser:pre-compile"
+    }
+}

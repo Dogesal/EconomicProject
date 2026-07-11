@@ -2,13 +2,13 @@
 
 namespace App\Support;
 
-use App\Domain\Models\Account;
 use App\Domain\Models\Setting;
 
 /**
  * Estado local de la vinculación con el bot de WhatsApp: credenciales del
- * dispositivo contra el servidor de sync y la cuenta destino por defecto.
- * La feature es opcional: sin vincular, la app sigue 100% offline.
+ * dispositivo contra el servidor de sync. La cuenta destino se elige en la
+ * conversación de WhatsApp (el bot pregunta), no aquí. La feature es
+ * opcional: sin vincular, la app sigue 100% offline.
  */
 class WhatsAppLink
 {
@@ -17,8 +17,6 @@ class WhatsAppLink
     public const API_TOKEN_KEY = 'whatsapp_api_token';
 
     public const LINKED_KEY = 'whatsapp_linked';
-
-    public const DEFAULT_ACCOUNT_KEY = 'whatsapp_default_account_id';
 
     public const BOT_PHONE_KEY = 'whatsapp_bot_phone';
 
@@ -47,13 +45,6 @@ class WhatsAppLink
         return Setting::get(self::BOT_PHONE_KEY);
     }
 
-    public function defaultAccount(): ?Account
-    {
-        $accountId = Setting::get(self::DEFAULT_ACCOUNT_KEY);
-
-        return $accountId !== null ? Account::find($accountId) : null;
-    }
-
     public function storeDevice(string $deviceId, string $apiToken): void
     {
         Setting::put(self::DEVICE_ID_KEY, $deviceId);
@@ -70,14 +61,10 @@ class WhatsAppLink
         Setting::put(self::BOT_PHONE_KEY, $phone);
     }
 
-    public function storeDefaultAccount(string $accountId): void
-    {
-        Setting::put(self::DEFAULT_ACCOUNT_KEY, $accountId);
-    }
-
     public function clear(): void
     {
         Setting::put(self::LINKED_KEY, null);
-        Setting::put(self::DEFAULT_ACCOUNT_KEY, null);
+        // Limpieza de la clave heredada (la cuenta destino ya se elige en WhatsApp).
+        Setting::put('whatsapp_default_account_id', null);
     }
 }

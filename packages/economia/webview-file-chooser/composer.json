@@ -1,0 +1,25 @@
+{
+    "name": "economia/webview-file-chooser",
+    "description": "Habilita <input type=\"file\"> en el webview Android (onShowFileChooser) para Mi Economía",
+    "type": "nativephp-plugin",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Economia\\WebViewFileChooser\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Economia\\WebViewFileChooser\\WebViewFileChooserServiceProvider"
+            ]
+        },
+        "nativephp": {
+            "manifest": "nativephp.json"
+        }
+    },
+    "minimum-stability": "stable"
+}
