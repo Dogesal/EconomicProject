@@ -6,6 +6,7 @@ use Codingwithrk\DoubleBackToClose\DoubleBackToCloseServiceProvider;
 use Codingwithrk\DoubleBackToClose\Facades\DoubleBackToClose;
 use Economia\MobileBiometrics\MobileBiometricsServiceProvider;
 use Economia\WebViewFileChooser\WebViewFileChooserServiceProvider;
+use Economia\WhatsAppBackgroundSync\WhatsAppBackgroundSyncServiceProvider;
 use Ikromjon\LocalNotifications\LocalNotificationsServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Providers\BrowserServiceProvider;
@@ -57,6 +58,7 @@ class NativeServiceProvider extends ServiceProvider
             DialogServiceProvider::class,
             BrowserServiceProvider::class,
             WebViewFileChooserServiceProvider::class,
+            WhatsAppBackgroundSyncServiceProvider::class,
 
         ];
     }

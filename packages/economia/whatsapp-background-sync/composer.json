@@ -1,0 +1,25 @@
+{
+    "name": "economia/whatsapp-background-sync",
+    "description": "Registra movimientos de WhatsApp en background al recibir el push FCM (app cerrada) para Mi Economía",
+    "type": "nativephp-plugin",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Economia\\WhatsAppBackgroundSync\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Economia\\WhatsAppBackgroundSync\\WhatsAppBackgroundSyncServiceProvider"
+            ]
+        },
+        "nativephp": {
+            "manifest": "nativephp.json"
+        }
+    },
+    "minimum-stability": "stable"
+}

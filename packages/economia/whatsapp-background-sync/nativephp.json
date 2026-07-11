@@ -1,0 +1,10 @@
+{
+    "namespace": "WhatsAppBackgroundSync",
+    "bridge_functions": [],
+    "android": {
+        "min_version": 26
+    },
+    "ios": {
+        "min_version": "18.2"
+    }
+}

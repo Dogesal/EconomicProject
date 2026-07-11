@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a37c4710e118bf98e915efb7899f073",
+    "content-hash": "ee54de7308cc23e1b4c296437f09f98f",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -714,6 +714,41 @@
                 "MIT"
             ],
             "description": "Habilita <input type=\"file\"> en el webview Android (onShowFileChooser) para Mi Economía",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "economia/whatsapp-background-sync",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "packages/economia/whatsapp-background-sync",
+                "reference": "ba053f4d36b45465c5cdf02bdef0c25f38d37652"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Economia\\WhatsAppBackgroundSync\\WhatsAppBackgroundSyncServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Economia\\WhatsAppBackgroundSync\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Registra movimientos de WhatsApp en background al recibir el push FCM (app cerrada) para Mi Economía",
             "transport-options": {
                 "relative": true
             }
@@ -10521,7 +10556,8 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "economia/mobile-biometrics": 20,
-        "economia/webview-file-chooser": 20
+        "economia/webview-file-chooser": 20,
+        "economia/whatsapp-background-sync": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

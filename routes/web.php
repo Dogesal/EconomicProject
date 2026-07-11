@@ -15,6 +15,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\WhatsAppSettingsController;
+use App\Http\Controllers\WhatsAppSyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/lock', [LockController::class, 'show'])->name('lock.show');
@@ -59,6 +60,7 @@ Route::post('/settings/backup/restore', [BackupController::class, 'restore'])->n
 Route::post('/settings/whatsapp/link', [WhatsAppSettingsController::class, 'link'])->name('settings.whatsapp.link');
 Route::post('/settings/whatsapp/refresh', [WhatsAppSettingsController::class, 'refresh'])->name('settings.whatsapp.refresh');
 Route::delete('/settings/whatsapp/link', [WhatsAppSettingsController::class, 'unlink'])->name('settings.whatsapp.unlink');
+Route::post('/whatsapp/sync', WhatsAppSyncController::class)->name('whatsapp.sync');
 
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
 Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');

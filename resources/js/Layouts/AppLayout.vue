@@ -3,6 +3,10 @@
 // cold-start relock fires exactly once per real app launch (not every time
 // the user comes back from the lock screen).
 let bootRelockHandled = false;
+
+// Same idea for the WhatsApp sync: layout remounts on every navigation, but
+// the sync should only fire on real app opens/resumes (server throttles too).
+let lastWhatsAppSyncAt = 0;
 </script>
 
 <script setup>
@@ -46,6 +50,20 @@ const relock = () => router.post('/lock/relock', {}, { preserveScroll: false });
 
 const shouldGuard = () => page.props.appLockEnabled && isNativeApp();
 
+// Aplica los movimientos de WhatsApp pendientes desde cualquier pantalla:
+// al abrir la app y al volver del background. El servidor tiene su propio
+// throttle, este solo evita el POST redundante.
+const WHATSAPP_SYNC_THROTTLE_MS = 60000;
+
+const syncWhatsApp = () => {
+    if (Date.now() - lastWhatsAppSyncAt < WHATSAPP_SYNC_THROTTLE_MS) {
+        return;
+    }
+
+    lastWhatsAppSyncAt = Date.now();
+    router.post('/whatsapp/sync', {}, { preserveScroll: true, preserveState: true });
+};
+
 onMounted(() => {
     cleanups.push(
         router.on('start', (event) => {
@@ -69,6 +87,8 @@ onMounted(() => {
         }
     }
 
+    syncWhatsApp();
+
     const onVisibilityChange = () => {
         if (document.hidden) {
             hiddenAt = Date.now();
@@ -78,6 +98,8 @@ onMounted(() => {
         if (shouldGuard() && hiddenAt !== null && Date.now() - hiddenAt > RESUME_GRACE_MS) {
             relock();
         }
+
+        syncWhatsApp();
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);
