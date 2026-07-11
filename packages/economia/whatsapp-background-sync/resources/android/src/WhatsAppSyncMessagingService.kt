@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.nativephp.mobile.R
+import com.nativephp.mobile.bridge.LaravelEnvironment
 import com.nativephp.mobile.bridge.PHPBridge
 import com.nativephp.mobile.ui.MainActivity
 import org.json.JSONObject
@@ -71,6 +72,12 @@ class WhatsAppSyncMessagingService : FirebaseMessagingService() {
         }
 
         try {
+            // Proceso frío: nadie seteó las env vars que persistent.php
+            // necesita (COMPOSER_AUTOLOADER_PATH, LARAVEL_BOOTSTRAP_PATH,
+            // rutas de DB/storage...). LaravelEnvironment las setea todas;
+            // con el bundle ya extraído es rápido.
+            LaravelEnvironment(applicationContext).initialize()
+
             bridge.ensureRuntimeInitialized()
 
             if (bridge.nativeEphemeralBoot(bootstrap) != 0) {
