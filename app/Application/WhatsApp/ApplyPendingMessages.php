@@ -3,11 +3,16 @@
 namespace App\Application\WhatsApp;
 
 use App\Application\Debts\CreateDebt;
+use App\Application\Debts\RecordDebtPayment;
 use App\Application\Transactions\RecordTransaction;
+use App\Application\Transactions\TransferBetweenAccounts;
 use App\Domain\Enums\CategoryType;
 use App\Domain\Enums\DebtDirection;
+use App\Domain\Enums\DebtStatus;
 use App\Domain\Enums\TransactionType;
 use App\Domain\Models\Account;
+use App\Domain\Models\Category;
+use App\Domain\Models\Debt;
 use App\Domain\Models\WhatsAppInboxEntry;
 use App\Domain\ValueObjects\Money;
 use App\Infrastructure\Http\WebhookServerClient;
@@ -24,11 +29,12 @@ use Throwable;
  *
  * La cuenta destino llega resuelta por el bot como account_id (con
  * account_text como fallback para mensajes de un servidor viejo). Al final
- * de cada sync se sube el snapshot de cuentas y saldos para que el bot
- * pregunte y valide con datos frescos.
+ * de cada sync se sube el snapshot (cuentas, categorías, deudas y resumen)
+ * para que el bot pregunte, valide y responda consultas con datos frescos.
  *
- * Soporta tres tipos: income/expense (transacción en la cuenta) y debt
- * (crea una deuda "Debo" sin tocar saldos).
+ * Tipos soportados: income/expense (transacción en la cuenta), debt (crea
+ * una deuda "Debo"), transfer (entre dos cuentas), debt_payment (pago de
+ * una deuda existente) y create_category (categoría nueva).
  */
 class ApplyPendingMessages
 {
@@ -39,6 +45,8 @@ class ApplyPendingMessages
         private readonly AccountMatcher $accounts,
         private readonly RecordTransaction $recordTransaction,
         private readonly CreateDebt $createDebt,
+        private readonly TransferBetweenAccounts $transferBetweenAccounts,
+        private readonly RecordDebtPayment $recordDebtPayment,
     ) {}
 
     public function handle(): ApplyResult
@@ -76,6 +84,16 @@ class ApplyPendingMessages
                 continue;
             }
 
+            if ($message['type'] === 'create_category') {
+                if ($this->applyCreateCategory($message, $acks)) {
+                    $applied++;
+                } else {
+                    $failed++;
+                }
+
+                continue;
+            }
+
             $account = $this->resolveAccount($message);
 
             if ($account === null) {
@@ -85,6 +103,30 @@ class ApplyPendingMessages
                     : 'Elige la cuenta al registrar por WhatsApp.';
                 $acks[] = $this->recordFailure($message, $reason);
                 $failed++;
+
+                continue;
+            }
+
+            if ($message['type'] === 'transfer') {
+                if ($this->applyTransfer($message, $account, $acks)) {
+                    $applied++;
+                } else {
+                    $failed++;
+                }
+
+                $account->refresh();
+
+                continue;
+            }
+
+            if ($message['type'] === 'debt_payment') {
+                if ($this->applyDebtPayment($message, $account, $acks)) {
+                    $applied++;
+                } else {
+                    $failed++;
+                }
+
+                $account->refresh();
 
                 continue;
             }
@@ -227,6 +269,155 @@ class ApplyPendingMessages
         $acks[] = ['id' => $message['id'], 'status' => WhatsAppInboxEntry::STATUS_APPLIED];
 
         return true;
+    }
+
+    /**
+     * Crea la categoría pedida por el bot. Si ya existe una con el mismo
+     * nombre y tipo se considera aplicada: el estado deseado ya se cumple.
+     *
+     * @param  array<string, mixed>  $message
+     * @param  list<array{id: string, status: string, reason?: ?string}>  $acks
+     */
+    private function applyCreateCategory(array $message, array &$acks): bool
+    {
+        $name = trim((string) ($message['category_text'] ?? ''));
+
+        if ($name === '') {
+            $acks[] = $this->recordFailure($message, 'La categoría no tiene nombre.');
+
+            return false;
+        }
+
+        $type = CategoryType::tryFrom((string) ($message['meta']['category_type'] ?? '')) ?? CategoryType::Expense;
+
+        $existing = Category::where('type', $type)
+            ->get()
+            ->first(fn (Category $category): bool => $this->normalize($category->name) === $this->normalize($name));
+
+        try {
+            if ($existing === null) {
+                Category::create([
+                    'name' => Str::ucfirst($name),
+                    'type' => $type,
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::warning("WhatsApp category {$message['id']} failed: {$e->getMessage()}");
+            $acks[] = $this->recordFailure($message, 'No se pudo crear la categoría.');
+
+            return false;
+        }
+
+        WhatsAppInboxEntry::create([
+            'id' => $message['id'],
+            'status' => WhatsAppInboxEntry::STATUS_APPLIED,
+            'raw_text' => $message['raw_text'],
+        ]);
+        $acks[] = ['id' => $message['id'], 'status' => WhatsAppInboxEntry::STATUS_APPLIED];
+
+        return true;
+    }
+
+    /**
+     * Aplica una transferencia entre la cuenta origen (resuelta como
+     * account_id) y la destino que viaja en meta.to_account_id.
+     *
+     * @param  array<string, mixed>  $message
+     * @param  list<array{id: string, status: string, reason?: ?string}>  $acks
+     */
+    private function applyTransfer(array $message, Account $from, array &$acks): bool
+    {
+        $toId = $message['meta']['to_account_id'] ?? null;
+        $to = $toId !== null ? Account::find($toId) : null;
+
+        if ($to === null || $to->is_archived) {
+            $toName = $message['meta']['to_account_name'] ?? 'destino';
+            $acks[] = $this->recordFailure($message, "No encontré la cuenta «{$toName}» en la app.");
+
+            return false;
+        }
+
+        try {
+            $result = $this->transferBetweenAccounts->handle(
+                $from,
+                $to,
+                Money::fromDecimal($message['amount'], $from->currency),
+                null,
+                Carbon::parse($message['occurred_on']),
+            );
+        } catch (Throwable $e) {
+            Log::warning("WhatsApp transfer {$message['id']} failed: {$e->getMessage()}");
+            $acks[] = $this->recordFailure($message, 'No se pudo registrar la transferencia (revisa saldo y monedas).');
+
+            return false;
+        }
+
+        WhatsAppInboxEntry::create([
+            'id' => $message['id'],
+            'transaction_id' => $result['out']->id,
+            'status' => WhatsAppInboxEntry::STATUS_APPLIED,
+            'raw_text' => $message['raw_text'],
+        ]);
+        $acks[] = ['id' => $message['id'], 'status' => WhatsAppInboxEntry::STATUS_APPLIED];
+
+        return true;
+    }
+
+    /**
+     * Registra un pago sobre la deuda que viaja en meta.debt_name como
+     * movimiento real en la cuenta resuelta.
+     *
+     * @param  array<string, mixed>  $message
+     * @param  list<array{id: string, status: string, reason?: ?string}>  $acks
+     */
+    private function applyDebtPayment(array $message, Account $account, array &$acks): bool
+    {
+        $debtName = trim((string) ($message['meta']['debt_name'] ?? ''));
+
+        $debt = Debt::where('status', DebtStatus::Active)
+            ->get()
+            ->first(fn (Debt $candidate): bool => $this->normalize($candidate->name) === $this->normalize($debtName));
+
+        if ($debt === null) {
+            $acks[] = $this->recordFailure($message, "No encontré la deuda «{$debtName}» en la app.");
+
+            return false;
+        }
+
+        try {
+            $transaction = $this->recordDebtPayment->handle(
+                $debt,
+                $account,
+                Money::fromDecimal($message['amount'], $account->currency),
+                Carbon::parse($message['occurred_on']),
+            );
+        } catch (Throwable $e) {
+            Log::warning("WhatsApp debt payment {$message['id']} failed: {$e->getMessage()}");
+            $acks[] = $this->recordFailure($message, 'No se pudo registrar el pago (revisa saldo, moneda y lo que queda de la deuda).');
+
+            return false;
+        }
+
+        WhatsAppInboxEntry::create([
+            'id' => $message['id'],
+            'transaction_id' => $transaction->id,
+            'status' => WhatsAppInboxEntry::STATUS_APPLIED,
+            'raw_text' => $message['raw_text'],
+        ]);
+        $acks[] = ['id' => $message['id'], 'status' => WhatsAppInboxEntry::STATUS_APPLIED];
+
+        return true;
+    }
+
+    private function normalize(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+
+        return strtr($value, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+            'ä' => 'a', 'ë' => 'e', 'ï' => 'i', 'ö' => 'o', 'ü' => 'u',
+            'ñ' => 'n',
+        ]);
     }
 
     /**

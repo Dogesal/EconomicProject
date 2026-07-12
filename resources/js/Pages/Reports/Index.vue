@@ -15,6 +15,8 @@ const props = defineProps({
     monthlyEvolution: { type: Array, default: () => [] },
     netWorth: { type: Array, default: () => [] },
     categoryExpenses: { type: Object, default: null },
+    accounts: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
 });
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -61,6 +63,9 @@ const drilldown = useCategoryDrilldown();
         :loading="drilldown.loading.value"
         :expenses="categoryExpenses"
         :period-label="periodLabel"
+        :accounts="accounts"
+        :categories="categories"
         @close="drilldown.close()"
+        @changed="drilldown.refresh()"
     />
 </template>

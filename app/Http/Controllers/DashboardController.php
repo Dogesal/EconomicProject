@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Application\Budgets\CalculateBudgetConsumption;
 use App\Application\Debts\SummarizeOutstandingDebts;
-use App\Application\Recurring\GenerateDueRecurringTransactions;
 use App\Application\Reports\MonthlyEvolution;
 use App\Application\Reports\SpendingByCategory;
 use App\Data\AccountData;
@@ -23,41 +22,27 @@ use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Infrastructure\Repositories\Contracts\TransactionRepository;
 use App\Support\DisplayCurrency;
 use App\Support\MoneyConverter;
-use App\Support\ReminderScheduler;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
 
 class DashboardController extends Controller
 {
     public function __invoke(
         AccountRepository $accounts,
         TransactionRepository $transactions,
-        GenerateDueRecurringTransactions $recurring,
         DisplayCurrency $displayCurrency,
         MoneyConverter $converter,
-        ReminderScheduler $reminders,
         CalculateBudgetConsumption $consumption,
         MonthlyEvolution $evolution,
         SpendingByCategory $spending,
         SummarizeOutstandingDebts $summarizeDebts,
     ): Response {
-        // No always-on scheduler on-device: catch up recurring transactions on open.
-        $recurring->handle();
-
-        // Re-sync local notification reminders; never let it break the dashboard.
-        try {
-            $reminders->schedule();
-        } catch (Throwable $e) {
-            Log::warning('Reminder scheduling failed: '.$e->getMessage());
-        }
-
-        // El sync de WhatsApp NO corre aquí: sus llamadas de red (timeouts
-        // de 2-3s) bloqueaban el primer render. AppLayout lo dispara async
-        // (POST /whatsapp/sync) apenas monta, en cualquier pantalla.
+        // Nada bloqueante corre aquí para no demorar el primer paint: el
+        // catch-up de recurrentes, los recordatorios y el sync de WhatsApp
+        // (todos con trabajo de escritura o red) los dispara AppLayout async
+        // apenas monta (POST /boot/tasks y POST /whatsapp/sync).
 
         $totals = $accounts->totalsByCurrency();
         $display = $displayCurrency->resolve();

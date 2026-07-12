@@ -14,6 +14,13 @@ interface AccountRepository
     public function allActive(): Collection;
 
     /**
+     * Archived accounts: read-only records kept for their history.
+     *
+     * @return Collection<int, Account>
+     */
+    public function archived(): Collection;
+
+    /**
      * Total balance grouped by currency (multi-currency safe).
      *
      * @return Collection<string, Money>

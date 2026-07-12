@@ -1,15 +1,43 @@
 <script setup>
+import { router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import BottomSheet from '@/Components/BottomSheet.vue';
+import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import TransactionListItem from '@/Components/TransactionListItem.vue';
+import TransactionForm from '@/Pages/Transactions/Partials/TransactionForm.vue';
 
 defineProps({
     open: { type: Boolean, default: false },
     loading: { type: Boolean, default: false },
     expenses: { type: Object, default: null },
     periodLabel: { type: String, default: '' },
+    accounts: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['close']);
+// `changed` avisa al padre para refrescar el drill-down tras editar/borrar.
+const emit = defineEmits(['close', 'changed']);
+
+const editing = ref(null);
+const deleting = ref(null);
+const deleteProcessing = ref(false);
+
+const onSaved = () => {
+    editing.value = null;
+    emit('changed');
+};
+
+const confirmDelete = () => {
+    deleteProcessing.value = true;
+    router.delete(`/transactions/${deleting.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => emit('changed'),
+        onFinish: () => {
+            deleteProcessing.value = false;
+            deleting.value = null;
+        },
+    });
+};
 </script>
 
 <template>
@@ -34,11 +62,39 @@ const emit = defineEmits(['close']);
             </div>
 
             <ul v-if="expenses.transactions.length" class="-mx-4 divide-y divide-slate-100 dark:divide-slate-800">
-                <TransactionListItem v-for="transaction in expenses.transactions" :key="transaction.id" :transaction="transaction" />
+                <TransactionListItem
+                    v-for="transaction in expenses.transactions"
+                    :key="transaction.id"
+                    :transaction="transaction"
+                    interactive
+                    deletable
+                    @select="editing = transaction"
+                    @delete="deleting = transaction"
+                />
             </ul>
             <p v-else class="py-6 text-center text-sm text-slate-400 dark:text-slate-500">
                 Sin gastos en esta categoría este mes.
             </p>
         </template>
     </BottomSheet>
+
+    <BottomSheet :open="editing !== null" title="Editar movimiento" @close="editing = null">
+        <TransactionForm
+            v-if="editing"
+            :key="editing.id"
+            :accounts="accounts"
+            :categories="categories"
+            :transaction="editing"
+            @saved="onSaved"
+        />
+    </BottomSheet>
+
+    <ConfirmDialog
+        :open="deleting !== null"
+        title="Eliminar movimiento"
+        :message="deleting ? `Se eliminará “${deleting.description || deleting.category?.name || deleting.typeLabel}” y se recalculará el saldo.` : ''"
+        :processing="deleteProcessing"
+        @confirm="confirmDelete"
+        @cancel="deleting = null"
+    />
 </template>

@@ -10,6 +10,7 @@ use App\Domain\Models\Debt;
 use App\Domain\Models\Setting;
 use App\Domain\Models\Transaction;
 use App\Domain\Models\WhatsAppInboxEntry;
+use App\Domain\ValueObjects\Money;
 use App\Support\WhatsAppLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -61,6 +62,7 @@ class ApplyPendingMessagesTest extends TestCase
             'account_text' => null,
             'account_id' => null,
             'description' => null,
+            'meta' => null,
             'occurred_on' => today()->toDateString(),
             'raw_text' => 'comida 100 hoy',
             'received_at' => now()->toIso8601String(),
@@ -311,6 +313,174 @@ class ApplyPendingMessagesTest extends TestCase
                 && $accounts[0]['id'] === $account->id
                 && $accounts[0]['name'] === 'BCP Soles'
                 && $accounts[0]['currency'] === 'ARS';
+        });
+    }
+
+    public function test_transfer_moves_money_between_accounts(): void
+    {
+        $from = Account::factory()->currency('ARS')->withInitialBalance(500)->create(['name' => 'BCP Soles']);
+        $to = Account::factory()->currency('ARS')->withInitialBalance(100)->create(['name' => 'Efectivo']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'transfer',
+            'amount' => '100.00',
+            'category_text' => null,
+            'account_id' => $from->id,
+            'meta' => ['to_account_id' => $to->id, 'to_account_name' => 'Efectivo'],
+            'raw_text' => 'pasa 100 de bcp a efectivo',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertSame(40000, $from->fresh()->current_balance->minorUnits);
+        $this->assertSame(20000, $to->fresh()->current_balance->minorUnits);
+        $this->assertDatabaseCount('transactions', 2);
+        $this->assertSame(WhatsAppInboxEntry::STATUS_APPLIED, WhatsAppInboxEntry::sole()->status);
+    }
+
+    public function test_transfer_to_unknown_account_fails_with_reason(): void
+    {
+        $from = Account::factory()->currency('ARS')->withInitialBalance(500)->create(['name' => 'BCP Soles']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'transfer',
+            'amount' => '100.00',
+            'account_id' => $from->id,
+            'meta' => ['to_account_id' => (string) Str::uuid(), 'to_account_name' => 'Efectivo'],
+            'raw_text' => 'pasa 100 de bcp a efectivo',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->failed);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertStringContainsString('Efectivo', WhatsAppInboxEntry::sole()->reason);
+    }
+
+    public function test_debt_payment_registers_expense_and_updates_debt(): void
+    {
+        $account = Account::factory()->currency('ARS')->withInitialBalance(500)->create();
+        $debt = Debt::factory()->create([
+            'name' => 'Juan',
+            'direction' => DebtDirection::IOwe,
+            'original_amount' => 10000,
+            'paid_amount' => 0,
+            'currency' => 'ARS',
+        ]);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'debt_payment',
+            'amount' => '50.00',
+            'account_id' => $account->id,
+            'meta' => ['debt_name' => 'juan'],
+            'raw_text' => 'pagué 50 de la deuda de juan',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertSame(45000, $account->fresh()->current_balance->minorUnits);
+        $this->assertSame(5000, $debt->fresh()->paid_amount->minorUnits);
+
+        $transaction = Transaction::sole();
+        $this->assertSame($debt->id, $transaction->debt_id);
+    }
+
+    public function test_debt_payment_for_unknown_debt_fails_with_reason(): void
+    {
+        $account = Account::factory()->currency('ARS')->withInitialBalance(500)->create();
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'debt_payment',
+            'amount' => '50.00',
+            'account_id' => $account->id,
+            'meta' => ['debt_name' => 'pedro'],
+            'raw_text' => 'pagué 50 de la deuda de pedro',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->failed);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertStringContainsString('pedro', WhatsAppInboxEntry::sole()->reason);
+    }
+
+    public function test_create_category_message_creates_it(): void
+    {
+        Account::factory()->currency('ARS')->withInitialBalance(100)->create();
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'create_category',
+            'amount' => '0.00',
+            'category_text' => 'mascotas',
+            'meta' => ['category_type' => 'expense'],
+            'raw_text' => 'crea la categoría mascotas',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+
+        $category = Category::sole();
+        $this->assertSame('Mascotas', $category->name);
+        $this->assertSame('expense', $category->type->value);
+    }
+
+    public function test_create_existing_category_is_idempotent(): void
+    {
+        Account::factory()->currency('ARS')->withInitialBalance(100)->create();
+        Category::factory()->expense()->create(['name' => 'Mascotas']);
+        $this->linkDevice();
+        $this->fakeServer([$this->message([
+            'type' => 'create_category',
+            'amount' => '0.00',
+            'category_text' => 'mascotas',
+            'meta' => ['category_type' => 'expense'],
+            'raw_text' => 'crea la categoría mascotas',
+        ])]);
+
+        $result = app(ApplyPendingMessages::class)->handle();
+
+        $this->assertSame(1, $result->applied);
+        $this->assertDatabaseCount('categories', 1);
+    }
+
+    public function test_snapshot_includes_categories_debts_and_summary(): void
+    {
+        $account = Account::factory()->currency('ARS')->withInitialBalance(1000)->create(['name' => 'BCP Soles']);
+        $category = Category::factory()->expense()->create(['name' => 'Comida']);
+        Debt::factory()->create([
+            'name' => 'Juan',
+            'direction' => DebtDirection::IOwe,
+            'original_amount' => 10000,
+            'paid_amount' => 0,
+            'currency' => 'ARS',
+        ]);
+        $account->transactions()->create([
+            'type' => 'expense',
+            'amount' => Money::fromDecimal('200', 'ARS'),
+            'currency' => 'ARS',
+            'is_inflow' => false,
+            'category_id' => $category->id,
+            'occurred_on' => today(),
+        ]);
+        $this->linkDevice();
+        $this->fakeServer([]);
+
+        app(ApplyPendingMessages::class)->handle();
+
+        Http::assertSent(function (Request $request): bool {
+            if (! str_ends_with($request->url(), '/api/devices/me/accounts')) {
+                return false;
+            }
+
+            return $request['categories'][0]['name'] === 'Comida'
+                && $request['debts'][0]['name'] === 'Juan'
+                && $request['debts'][0]['direction'] === 'i_owe'
+                && $request['summary']['month'] === now()->format('Y-m')
+                && (float) $request['summary']['by_currency'][0]['expense'] === 200.0
+                && $request['summary']['top_categories'][0]['name'] === 'Comida';
         });
     }
 

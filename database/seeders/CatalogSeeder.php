@@ -23,6 +23,7 @@ class CatalogSeeder extends Seeder
             ['ARS', 'Peso argentino', '$', 2],
             ['BRL', 'Real brasileño', 'R$', 2],
             ['CLP', 'Peso chileno', '$', 0],
+            ['MXN', 'Peso mexicano', '$', 2],
         ])->each(fn ($c) => Currency::updateOrCreate(
             ['code' => $c[0]],
             ['name' => $c[1], 'symbol' => $c[2], 'decimals' => $c[3]],

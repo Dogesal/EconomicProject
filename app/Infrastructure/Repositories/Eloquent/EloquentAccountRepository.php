@@ -17,6 +17,14 @@ class EloquentAccountRepository implements AccountRepository
             ->get();
     }
 
+    public function archived(): Collection
+    {
+        return Account::query()
+            ->where('is_archived', true)
+            ->orderBy('name')
+            ->get();
+    }
+
     public function totalsByCurrency(): Collection
     {
         return Account::query()

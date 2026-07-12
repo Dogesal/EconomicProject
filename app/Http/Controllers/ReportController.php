@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Application\Reports\ExpensesForCategory;
 use App\Application\Reports\MonthlyEvolution;
 use App\Application\Reports\SpendingByCategory;
+use App\Data\AccountData;
+use App\Data\CategoryData;
 use App\Data\MoneyData;
+use App\Domain\Models\Category;
 use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Support\DisplayCurrency;
 use Inertia\Inertia;
@@ -32,6 +35,8 @@ class ReportController extends Controller
             'netWorth' => $accounts->totalsByCurrency()
                 ->map(fn ($money) => MoneyData::fromMoney($money))
                 ->values(),
+            'accounts' => AccountData::collect($accounts->allActive()),
+            'categories' => CategoryData::collect(Category::orderBy('name')->get()),
             'categoryExpenses' => Inertia::optional(fn () => request()->filled('drill_category')
                 ? $expenses->handle(request()->string('drill_category')->toString(), $year, $month, $displayCurrency)
                 : null),

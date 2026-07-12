@@ -19,6 +19,7 @@ class AccountController extends Controller
     {
         return Inertia::render('Accounts/Index', [
             'accounts' => AccountData::collect($accounts->allActive()),
+            'archivedAccounts' => AccountData::collect($accounts->archived()),
             'accountTypes' => collect(AccountType::cases())->map(fn ($type) => [
                 'value' => $type->value,
                 'label' => $type->label(),
@@ -38,7 +39,6 @@ class AccountController extends Controller
             'initial_balance' => $initial,
             'current_balance' => $initial,
             'color' => $request->input('color'),
-            'is_archived' => $request->boolean('is_archived'),
         ]);
 
         return back()->with('success', 'Cuenta creada.');
@@ -46,20 +46,44 @@ class AccountController extends Controller
 
     public function update(UpdateAccountRequest $request, Account $account): RedirectResponse
     {
+        // Una cuenta archivada es un registro de solo lectura: para
+        // modificarla hay que restaurarla primero.
+        if ($account->is_archived) {
+            return back()->with('error', 'La cuenta está archivada. Restáurala para poder editarla.');
+        }
+
         $account->update([
             'name' => $request->string('name'),
             'type' => $request->enum('type', AccountType::class),
             'color' => $request->input('color'),
-            'is_archived' => $request->boolean('is_archived'),
         ]);
 
         return back()->with('success', 'Cuenta actualizada.');
     }
 
+    /**
+     * "Eliminar" preserva el historial: si la cuenta tiene movimientos se
+     * archiva (queda como registro de solo lectura, conserva nombre y saldo,
+     * y sus movimientos siguen mostrando la cuenta). Solo se borra de verdad
+     * cuando está vacía.
+     */
     public function destroy(Account $account): RedirectResponse
     {
-        $account->delete();
+        if ($account->transactions()->exists()) {
+            $account->update(['is_archived' => true]);
+
+            return back()->with('success', 'Cuenta archivada: conserva su historial pero ya no recibe movimientos.');
+        }
+
+        $account->forceDelete();
 
         return back()->with('success', 'Cuenta eliminada.');
+    }
+
+    public function restore(Account $account): RedirectResponse
+    {
+        $account->update(['is_archived' => false]);
+
+        return back()->with('success', 'Cuenta restaurada.');
     }
 }

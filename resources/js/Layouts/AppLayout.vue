@@ -7,6 +7,10 @@ let bootRelockHandled = false;
 // Same idea for the WhatsApp sync: layout remounts on every navigation, but
 // the sync should only fire on real app opens/resumes (server throttles too).
 let lastWhatsAppSyncAt = 0;
+
+// Boot maintenance (recurring catch-up + reminder rescheduling) also runs
+// post-mount so it never blocks first paint; once per real open/resume.
+let lastBootTasksAt = 0;
 </script>
 
 <script setup>
@@ -66,6 +70,20 @@ const syncWhatsApp = (force = false) => {
     router.post('/whatsapp/sync', { force: force ? 1 : 0 }, { preserveScroll: true, preserveState: true });
 };
 
+// Movido fuera del render del Dashboard: pone al día recurrentes y
+// recordatorios sin demorar el primer paint. Throttle propio para no
+// repetir en cada navegación; corre al abrir y al volver del background.
+const BOOT_TASKS_THROTTLE_MS = 60000;
+
+const runBootTasks = () => {
+    if (Date.now() - lastBootTasksAt < BOOT_TASKS_THROTTLE_MS) {
+        return;
+    }
+
+    lastBootTasksAt = Date.now();
+    router.post('/boot/tasks', {}, { preserveScroll: true, preserveState: true });
+};
+
 onMounted(() => {
     cleanups.push(
         router.on('start', (event) => {
@@ -91,6 +109,7 @@ onMounted(() => {
 
     window.__syncWhatsApp = syncWhatsApp;
     syncWhatsApp();
+    runBootTasks();
 
     const onVisibilityChange = () => {
         if (document.hidden) {
@@ -103,6 +122,7 @@ onMounted(() => {
         }
 
         syncWhatsApp();
+        runBootTasks();
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\BootTasksController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -23,6 +24,10 @@ Route::post('/unlock', [LockController::class, 'unlock'])->name('lock.unlock');
 Route::post('/lock/relock', [LockController::class, 'relock'])->name('lock.relock');
 
 Route::get('/', DashboardController::class)->name('dashboard');
+
+// Tareas de arranque fuera del render (recurrentes + recordatorios); el
+// layout lo dispara async al montar para no demorar el primer paint.
+Route::post('/boot/tasks', BootTasksController::class)->name('boot.tasks');
 
 Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
 Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
@@ -65,6 +70,7 @@ Route::post('/whatsapp/sync', WhatsAppSyncController::class)->name('whatsapp.syn
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
 Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
 Route::put('/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
+Route::post('/accounts/{account}/restore', [AccountController::class, 'restore'])->name('accounts.restore');
 Route::delete('/accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
 
 Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');

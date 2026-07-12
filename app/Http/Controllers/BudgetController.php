@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Application\Budgets\CalculateBudgetConsumption;
 use App\Application\Budgets\CreateBudget;
 use App\Application\Reports\ExpensesForCategory;
+use App\Data\AccountData;
 use App\Data\CategoryData;
 use App\Domain\Enums\CategoryType;
 use App\Domain\Models\Budget;
 use App\Domain\Models\Category;
 use App\Domain\ValueObjects\Money;
 use App\Http\Requests\StoreBudgetRequest;
+use App\Infrastructure\Repositories\Contracts\AccountRepository;
 use App\Support\DisplayCurrency;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -18,7 +20,7 @@ use Inertia\Response;
 
 class BudgetController extends Controller
 {
-    public function index(CalculateBudgetConsumption $consumption, ExpensesForCategory $expenses, DisplayCurrency $currency): Response
+    public function index(CalculateBudgetConsumption $consumption, ExpensesForCategory $expenses, AccountRepository $accounts, DisplayCurrency $currency): Response
     {
         $year = (int) request()->integer('year', (int) now()->year);
         $month = (int) request()->integer('month', (int) now()->month);
@@ -31,6 +33,8 @@ class BudgetController extends Controller
             'expenseCategories' => CategoryData::collect(
                 Category::where('type', CategoryType::Expense)->orderBy('name')->get()
             ),
+            'accounts' => AccountData::collect($accounts->allActive()),
+            'categories' => CategoryData::collect(Category::orderBy('name')->get()),
             'categoryExpenses' => Inertia::optional(fn () => request()->filled('drill_category')
                 ? $expenses->handle(request()->string('drill_category')->toString(), $year, $month, $displayCurrency)
                 : null),
