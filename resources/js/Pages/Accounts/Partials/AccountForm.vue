@@ -69,7 +69,7 @@ const submit = () => {
                     :key="color"
                     type="button"
                     class="h-8 w-8 rounded-full transition-transform"
-                    :class="form.color === color ? 'scale-110 ring-2 ring-slate-400 ring-offset-2 dark:ring-slate-500 dark:ring-offset-slate-900' : ''"
+                    :class="form.color === color ? 'scale-110 ring-2 ring-ink-faint ring-offset-2 ring-offset-card' : ''"
                     :style="{ backgroundColor: color }"
                     :aria-label="`Color ${color}`"
                     @click="form.color = color"

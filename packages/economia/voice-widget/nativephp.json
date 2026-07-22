@@ -1,0 +1,18 @@
+{
+    "namespace": "VoiceWidget",
+    "bridge_functions": [],
+    "android": {
+        "min_version": 26
+    },
+    "ios": {
+        "min_version": "18.2"
+    },
+    "assets": {
+        "android": {
+            "android/res/layout/voice_widget.xml": "res/layout/voice_widget.xml",
+            "android/res/xml/voice_widget_info.xml": "res/xml/voice_widget_info.xml",
+            "android/res/drawable/ic_voice_mic.xml": "res/drawable/ic_voice_mic.xml",
+            "android/res/drawable/voice_widget_bg.xml": "res/drawable/voice_widget_bg.xml"
+        }
+    }
+}

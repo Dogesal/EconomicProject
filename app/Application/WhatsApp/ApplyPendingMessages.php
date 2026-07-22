@@ -51,7 +51,10 @@ class ApplyPendingMessages
 
     public function handle(): ApplyResult
     {
-        if (! $this->link->isConfigured() || ! $this->link->isLinked()) {
+        // Basta con el registro del dispositivo: los pendientes pueden venir
+        // del bot de WhatsApp o del widget de voz (que no exige vincular
+        // ningún teléfono).
+        if (! $this->link->isConfigured() || ! $this->link->isRegistered()) {
             return ApplyResult::empty();
         }
 

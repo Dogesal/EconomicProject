@@ -10,10 +10,10 @@ defineProps({
     <Head :title="title" />
 
     <header class="mb-4">
-        <h1 class="text-xl font-bold text-slate-900">{{ title }}</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">{{ title }}</h1>
     </header>
 
-    <div class="rounded-xl border border-dashed border-slate-300 p-10 text-center">
-        <p class="text-sm text-slate-500">Esta sección se construye en la próxima fase. 🚧</p>
+    <div class="rounded-2xl border border-dashed border-line p-10 text-center">
+        <p class="text-sm text-ink-soft">Esta sección se construye en la próxima fase. 🚧</p>
     </div>
 </template>

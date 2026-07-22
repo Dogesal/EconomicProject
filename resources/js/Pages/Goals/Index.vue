@@ -107,7 +107,7 @@ const confirmDelete = () => {
     <Head title="Metas" />
 
     <header class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Metas de ahorro</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">Metas de ahorro</h1>
         <BaseButton size="sm" @click="sheetOpen = true">Nueva</BaseButton>
     </header>
 
@@ -118,15 +118,15 @@ const confirmDelete = () => {
             <AppCard>
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <p class="truncate font-medium text-slate-800 dark:text-slate-200">{{ goal.name }}</p>
-                        <p class="text-xs text-slate-400 dark:text-slate-500">
+                        <p class="truncate font-medium text-ink">{{ goal.name }}</p>
+                        <p class="text-xs text-ink-faint">
                             {{ goal.statusLabel }}<span v-if="goal.targetDate"> · meta {{ goal.targetDate }}</span>
                             <span v-if="goal.accountName"> · 🏦 {{ goal.accountName }}</span>
                         </p>
                     </div>
                     <button
                         type="button"
-                        class="shrink-0 rounded-full p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:text-slate-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+                        class="shrink-0 rounded-full p-1.5 text-ink-faint transition-colors hover:bg-neg-soft hover:text-neg dark:text-ink-soft dark:hover:bg-neg/10 dark:hover:text-neg"
                         aria-label="Eliminar meta"
                         @click="deleting = goal"
                     >
@@ -138,11 +138,11 @@ const confirmDelete = () => {
 
                 <ProgressBar
                     :percentage="goal.progress"
-                    :bar-class="goal.status === 'completed' ? 'bg-emerald-500' : 'bg-indigo-500'"
+                    :bar-class="goal.status === 'completed' ? 'bg-pos' : 'bg-brand-500'"
                 />
-                <div class="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div class="mt-2 flex items-center justify-between text-xs text-ink-soft">
                     <span>{{ goal.current.formatted }} / {{ goal.target.formatted }}</span>
-                    <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ goal.progress }}%</span>
+                    <span class="font-semibold text-brand-500">{{ goal.progress }}%</span>
                 </div>
 
                 <div class="mt-3 grid grid-cols-2 gap-2">

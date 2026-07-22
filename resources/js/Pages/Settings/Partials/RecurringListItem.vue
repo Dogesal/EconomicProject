@@ -7,25 +7,25 @@ const emit = defineEmits(['delete']);
 </script>
 
 <template>
-    <li class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+    <li class="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card p-3 dark:bg-card">
         <div class="min-w-0">
-            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+            <p class="truncate text-sm font-medium text-ink">
                 {{ recurring.description || recurring.typeLabel }}
             </p>
-            <p class="truncate text-xs text-slate-400 dark:text-slate-500">
+            <p class="truncate text-xs text-ink-faint">
                 {{ recurring.frequencyLabel }} · próx. {{ recurring.nextRunOn }} · {{ recurring.accountName }}
             </p>
         </div>
         <div class="flex shrink-0 items-center gap-1">
             <span
                 class="text-sm font-semibold"
-                :class="recurring.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                :class="recurring.type === 'income' ? 'text-pos' : 'text-neg'"
             >
                 {{ recurring.amount.formatted }}
             </span>
             <button
                 type="button"
-                class="rounded-full p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:text-slate-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+                class="rounded-full p-1.5 text-ink-faint transition-colors hover:bg-neg-soft hover:text-neg dark:text-ink-soft dark:hover:bg-neg/10 dark:hover:text-neg"
                 aria-label="Eliminar recurrente"
                 @click="emit('delete')"
             >

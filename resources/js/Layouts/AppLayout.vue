@@ -108,6 +108,12 @@ onMounted(() => {
     }
 
     window.__syncWhatsApp = syncWhatsApp;
+    // Camino del widget de voz con la app abierta: el lado nativo
+    // (VoiceCaptureActivity) entrega aquí el texto transcrito y el reply
+    // del servidor llega como flash con las props ya recargadas.
+    window.__sendVoiceNote = (text) => {
+        router.post('/voice-notes', { text }, { preserveScroll: true });
+    };
     syncWhatsApp();
     runBootTasks();
 
@@ -135,12 +141,44 @@ onUnmounted(() => {
 });
 
 const navItems = [
-    { label: 'Inicio', route: 'dashboard', href: '/', icon: 'M3 12l9-9 9 9M5 10v10h14V10' },
-    { label: 'Movimientos', route: 'transactions.index', href: '/transactions', icon: 'M4 7h16M4 12h16M4 17h10' },
-    { label: 'Presupuestos', route: 'budgets.index', href: '/budgets', icon: 'M4 4h16v16H4zM4 10h16' },
-    { label: 'Reportes', route: 'reports.index', href: '/reports', match: ['/reports', '/statistics'], icon: 'M4 20V10M10 20V4M16 20v-6M22 20H2' },
-    { label: 'Metas', route: 'goals.index', href: '/goals', match: ['/goals', '/debts'], icon: 'M12 2v20M2 12h20' },
-    { label: 'Ajustes', route: 'settings.index', href: '/settings', icon: 'M10.3 3.3a2 2 0 013.4 0M12 8a4 4 0 100 8 4 4 0 000-8z' },
+    {
+        label: 'Inicio',
+        route: 'dashboard',
+        href: '/',
+        icon: 'M2.25 12l8.955-8.955a1.5 1.5 0 012.122 0L22.28 12M4.5 9.75V19.5a1.5 1.5 0 001.5 1.5h3.75v-5.25a1.5 1.5 0 011.5-1.5h1.5a1.5 1.5 0 011.5 1.5V21H18a1.5 1.5 0 001.5-1.5V9.75',
+    },
+    {
+        label: 'Movimientos',
+        route: 'transactions.index',
+        href: '/transactions',
+        icon: 'M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.01M3.75 12h.01M3.75 17.25h.01',
+    },
+    {
+        label: 'Presupuestos',
+        route: 'budgets.index',
+        href: '/budgets',
+        icon: 'M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6zM13.5 3v7.5H21A7.5 7.5 0 0013.5 3z',
+    },
+    {
+        label: 'Reportes',
+        route: 'reports.index',
+        href: '/reports',
+        match: ['/reports', '/statistics'],
+        icon: 'M3.75 20.25h16.5M6.75 20.25v-7.5M12 20.25V6.75M17.25 20.25v-4.5',
+    },
+    {
+        label: 'Metas',
+        route: 'goals.index',
+        href: '/goals',
+        match: ['/goals', '/debts'],
+        icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zm0-4.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0-3a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+    },
+    {
+        label: 'Ajustes',
+        route: 'settings.index',
+        href: '/settings',
+        icon: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z',
+    },
 ];
 
 const isActive = (item) => {
@@ -150,10 +188,16 @@ const isActive = (item) => {
 
     return (item.match ?? [item.href]).some((prefix) => currentPath.value.startsWith(prefix));
 };
+
+// Botón flotante del mockup: acción principal (registrar movimiento) siempre a
+// mano. Se oculta donde ya hay un flujo propio de alta o no aplica.
+const FAB_HIDDEN_PREFIXES = ['/settings', '/lock'];
+
+const showFab = computed(() => !FAB_HIDDEN_PREFIXES.some((prefix) => currentPath.value.startsWith(prefix)));
 </script>
 
 <template>
-    <div class="mx-auto flex min-h-full max-w-md flex-col bg-slate-50 dark:bg-slate-950">
+    <div class="mx-auto flex min-h-full max-w-md flex-col bg-surface">
         <main class="relative flex-1 px-4 pb-24 pt-[calc(env(safe-area-inset-top)+1rem)]">
             <Transition
                 enter-active-class="transition-opacity duration-150"
@@ -163,11 +207,11 @@ const isActive = (item) => {
             >
                 <div
                     v-if="loading"
-                    class="absolute inset-0 z-30 flex items-start justify-center bg-slate-50/70 pt-24 backdrop-blur-[1px] dark:bg-slate-950/70"
+                    class="absolute inset-0 z-30 flex items-start justify-center bg-surface/70 pt-24 backdrop-blur-[1px]"
                     aria-live="polite"
                     aria-busy="true"
                 >
-                    <svg class="h-8 w-8 animate-spin text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none">
+                    <svg class="h-8 w-8 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
                         <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                         <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
                     </svg>
@@ -180,19 +224,26 @@ const isActive = (item) => {
 
         <ToastNotification />
 
+        <Link
+            v-if="showFab"
+            href="/transactions?new=1"
+            class="fixed bottom-24 right-[max(1rem,calc(50%-13rem))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg shadow-brand-500/30 transition-transform active:scale-95"
+            aria-label="Nuevo movimiento"
+        >
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+            </svg>
+        </Link>
+
         <nav
-            class="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/90"
+            class="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
         >
             <ul class="grid grid-cols-6">
                 <li v-for="item in navItems" :key="item.href">
                     <Link
                         :href="item.href"
-                        class="flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors"
-                        :class="
-                            isActive(item)
-                                ? 'text-indigo-600 dark:text-indigo-400'
-                                : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
-                        "
+                        class="flex flex-col items-center gap-1 py-2.5 text-[10px] transition-colors"
+                        :class="isActive(item) ? 'font-bold text-brand-500' : 'font-medium text-ink-faint'"
                     >
                         <svg
                             class="h-6 w-6"

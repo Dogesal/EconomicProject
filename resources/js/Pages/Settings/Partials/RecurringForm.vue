@@ -26,8 +26,8 @@ const form = useForm({
 });
 
 const typeOptions = [
-    { value: 'expense', label: 'Gasto', activeClass: 'text-rose-600 dark:text-rose-400' },
-    { value: 'income', label: 'Ingreso', activeClass: 'text-emerald-600 dark:text-emerald-400' },
+    { value: 'expense', label: 'Gasto', activeClass: 'text-neg' },
+    { value: 'income', label: 'Ingreso', activeClass: 'text-pos' },
 ];
 
 const frequencies = [

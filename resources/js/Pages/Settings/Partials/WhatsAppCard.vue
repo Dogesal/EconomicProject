@@ -64,26 +64,26 @@ const statusLabel = (entry) => (entry.status === 'applied' ? '✔' : '✖');
 
 <template>
     <AppCard v-if="whatsapp.configured" class="mb-4">
-        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Registrar por WhatsApp</h2>
+        <h2 class="text-sm font-semibold text-ink-soft">Registrar por WhatsApp</h2>
 
         <template v-if="!whatsapp.linked">
-            <p class="mb-3 mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+            <p class="mb-3 mt-0.5 text-xs text-ink-faint">
                 Vinculá tu WhatsApp y registrá movimientos enviando mensajes como “comida 100 hoy”.
             </p>
 
             <template v-if="linkCode">
-                <div class="mb-3 rounded-lg bg-slate-50 p-3 text-center dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">Envía este mensaje al bot:</p>
-                    <p class="mt-1 font-mono text-lg font-bold tracking-widest text-slate-900 dark:text-slate-100">
+                <div class="mb-3 rounded-xl bg-muted p-3 text-center dark:bg-card/60">
+                    <p class="text-xs text-ink-faint">Envía este mensaje al bot:</p>
+                    <p class="mt-1 font-mono text-lg font-bold tracking-widest text-ink">
                         VINCULAR {{ linkCode.code }}
                     </p>
-                    <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">El código vence en 10 minutos.</p>
+                    <p class="mt-1 text-[11px] text-ink-faint">El código vence en 10 minutos.</p>
                 </div>
                 <div class="flex gap-2">
                     <button
                         v-if="waLink"
                         type="button"
-                        class="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                        class="flex-1 rounded-xl bg-pos px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-pos"
                         @click="openWhatsApp"
                     >
                         Abrir WhatsApp
@@ -98,23 +98,23 @@ const statusLabel = (entry) => (entry.status === 'applied' ? '✔' : '✖');
         </template>
 
         <template v-else>
-            <p class="mb-3 mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+            <p class="mb-3 mt-0.5 text-xs text-ink-faint">
                 Vinculado. Envía “comida 100 hoy” al bot y se registrará al abrir la app.
                 La cuenta se elige en WhatsApp: dila en el mensaje (“comida 100 cuenta bcp”)
                 o el bot te preguntará. También puedes anotar deudas (“deuda 50 juan”).
             </p>
 
             <div v-if="whatsapp.recentInbox?.length" class="mb-3">
-                <p class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Últimos mensajes</p>
-                <ul class="divide-y divide-slate-100 rounded-lg border border-slate-100 dark:divide-slate-800 dark:border-slate-800">
+                <p class="mb-1 text-xs font-medium text-ink-soft">Últimos mensajes</p>
+                <ul class="divide-y divide-line rounded-xl border border-line dark:divide-line">
                     <li v-for="entry in whatsapp.recentInbox" :key="entry.id" class="px-3 py-1.5 text-xs">
                         <div class="flex items-center gap-2">
-                            <span :class="entry.status === 'applied' ? 'text-emerald-500' : 'text-rose-500'">
+                            <span :class="entry.status === 'applied' ? 'text-pos' : 'text-neg'">
                                 {{ statusLabel(entry) }}
                             </span>
-                            <span class="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-300">{{ entry.raw_text }}</span>
+                            <span class="min-w-0 flex-1 truncate text-ink-soft">{{ entry.raw_text }}</span>
                         </div>
-                        <p v-if="entry.reason" class="mt-0.5 pl-5 text-[11px] text-rose-500 dark:text-rose-400">{{ entry.reason }}</p>
+                        <p v-if="entry.reason" class="mt-0.5 pl-5 text-[11px] text-neg">{{ entry.reason }}</p>
                     </li>
                 </ul>
             </div>

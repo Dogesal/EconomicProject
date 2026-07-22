@@ -29,28 +29,28 @@ const drilldown = useCategoryDrilldown();
     <Head title="Reportes" />
 
     <header class="mb-4">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Reportes</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">Reportes</h1>
     </header>
 
     <SectionTabs :tabs="[{ label: 'Reportes', href: '/reports' }, { label: 'Estadísticas', href: '/statistics' }]" />
 
-    <section class="mb-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-700 p-5 text-white dark:from-slate-800 dark:to-slate-900 dark:ring-1 dark:ring-slate-700">
-        <p class="text-xs opacity-70">Patrimonio neto</p>
+    <section class="mb-6 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-500 p-5 text-white">
+        <p class="text-xs font-bold uppercase tracking-widest opacity-80">Patrimonio neto</p>
         <div class="mt-1 space-y-0.5">
-            <p v-for="nw in netWorth" :key="nw.currency" class="text-2xl font-bold">{{ nw.formatted }}</p>
+            <p v-for="nw in netWorth" :key="nw.currency" class="amount text-3xl font-bold">{{ nw.formatted }}</p>
             <p v-if="!netWorth.length" class="text-2xl font-bold">—</p>
         </div>
     </section>
 
     <section class="mb-6">
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Evolución (6 meses)</h2>
+        <h2 class="mb-2 text-lg font-bold text-ink">Evolución (6 meses)</h2>
         <AppCard>
             <MonthlyBarChart :points="monthlyEvolution" />
         </AppCard>
     </section>
 
     <section>
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <h2 class="mb-2 text-lg font-bold text-ink">
             Gasto por categoría (este mes)
         </h2>
         <AppCard>

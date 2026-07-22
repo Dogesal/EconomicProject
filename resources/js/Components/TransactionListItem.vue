@@ -1,8 +1,12 @@
 <script setup>
+import { dayLabel } from '@/utils/dates';
+
 defineProps({
     transaction: { type: Object, required: true },
     interactive: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
+    /** `row` = fila dentro de una lista dividida; `card` = tarjeta suelta (mockup Movimientos). */
+    variant: { type: String, default: 'row' },
 });
 
 const emit = defineEmits(['select', 'delete']);
@@ -10,40 +14,43 @@ const emit = defineEmits(['select', 'delete']);
 
 <template>
     <li
-        class="flex items-center gap-3 px-4 py-3"
-        :class="interactive ? 'cursor-pointer transition-colors active:bg-slate-50 dark:active:bg-slate-800' : ''"
+        class="flex items-center gap-3"
+        :class="[ variant === 'card' ? 'rounded-2xl bg-muted px-4 py-3.5' : 'px-4 py-3.5',
+            interactive ? 'cursor-pointer transition-colors active:opacity-70' : '',
+        ]"
         @click="interactive && emit('select')"
     >
         <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-            :class="
-                transaction.isInflow
-                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'
-            "
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-base"
+            :class="variant === 'card' ? 'bg-card' : 'bg-muted'"
+            :style="transaction.category?.color ? { color: transaction.category.color } : {}"
         >
             <template v-if="transaction.category?.icon">{{ transaction.category.icon }}</template>
             <template v-else-if="transaction.transferGroupId">⇄</template>
             <template v-else>{{ transaction.isInflow ? '↓' : '↑' }}</template>
         </span>
+
         <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+            <p class="truncate text-sm font-bold text-ink">
                 {{ transaction.description || transaction.category?.name || transaction.typeLabel }}
             </p>
-            <p class="truncate text-xs text-slate-400 dark:text-slate-500">
-                {{ transaction.account?.name }} · {{ transaction.occurredOn }}
+            <p class="truncate text-xs text-ink-faint">
+                <span v-if="transaction.category?.name" class="font-semibold uppercase tracking-wide">
+                    {{ transaction.category.name }}
+                </span>
+                <span v-else>{{ transaction.account?.name }}</span>
+                · {{ dayLabel(transaction.occurredOn) }}
             </p>
         </div>
-        <span
-            class="shrink-0 text-sm font-semibold"
-            :class="transaction.isInflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-        >
+
+        <span class="amount shrink-0 text-sm font-bold" :class="transaction.isInflow ? 'text-pos' : 'text-neg'">
             {{ transaction.isInflow ? '+' : '−' }}{{ transaction.amount.formatted }}
         </span>
+
         <button
             v-if="deletable"
             type="button"
-            class="shrink-0 rounded-full p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:text-slate-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+            class="shrink-0 rounded-full p-1.5 text-ink-faint transition-colors hover:bg-neg-soft hover:text-neg"
             aria-label="Eliminar movimiento"
             @click.stop="emit('delete')"
         >

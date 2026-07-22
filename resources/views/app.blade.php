@@ -16,13 +16,13 @@
             })(@json($page['props']['theme'] ?? 'system'));
         </script>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#4f46e5" />
+        <meta name="theme-color" content="#3c5e4d" />
         <title inertia>{{ config('app.name', 'Mi Economía') }}</title>
         @routes
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @inertiaHead
     </head>
-    <body class="h-full bg-slate-50 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+    <body class="h-full bg-surface font-sans text-ink antialiased">
         @inertia
     </body>
 </html>

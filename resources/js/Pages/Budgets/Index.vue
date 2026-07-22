@@ -7,7 +7,6 @@ import BottomSheet from '@/Components/BottomSheet.vue';
 import CategoryExpensesSheet from '@/Components/CategoryExpensesSheet.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import EmptyState from '@/Components/EmptyState.vue';
-import ProgressBar from '@/Components/ProgressBar.vue';
 import BudgetForm from './Partials/BudgetForm.vue';
 import { useCategoryDrilldown } from '@/composables/useCategoryDrilldown';
 
@@ -29,7 +28,20 @@ const deleting = ref(null);
 const deleteProcessing = ref(false);
 const drilldown = useCategoryDrilldown();
 
-const barClass = (row) => (row.isOverBudget ? 'bg-rose-500' : row.percentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500');
+/**
+ * Totales del encabezado. El símbolo se toma de un importe ya formateado por el
+ * backend para no duplicar la lógica de moneda en el cliente.
+ */
+const totals = computed(() => {
+    const sum = (key) => props.consumption.reduce((carry, row) => carry + row[key].decimal, 0);
+    const prefix = (props.consumption[0]?.budgeted.formatted ?? '').match(/^[^\d-]*/)[0];
+    const format = (value) =>
+        `${prefix}${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    return { budgeted: format(sum('budgeted')), spent: format(sum('spent')) };
+});
+
+const barClass = (row) => (row.isOverBudget ? 'bg-neg' : row.percentage >= 80 ? 'bg-gold-500' : 'bg-brand-500');
 
 const confirmDelete = () => {
     deleteProcessing.value = true;
@@ -46,25 +58,74 @@ const confirmDelete = () => {
 <template>
     <Head title="Presupuestos" />
 
-    <header class="mb-4 flex items-center justify-between">
-        <div>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Presupuestos</h1>
-            <p class="text-xs text-slate-400 dark:text-slate-500">{{ periodLabel }}</p>
+    <header class="mb-5 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold tracking-tight text-ink">Presupuesto</h1>
+            <p class="text-sm text-ink-soft">{{ periodLabel }}</p>
         </div>
-        <BaseButton size="sm" :disabled="!expenseCategories.length" @click="sheetOpen = true">Nuevo</BaseButton>
+        <BaseButton size="sm" :disabled="!expenseCategories.length" @click="sheetOpen = true">+ Nuevo</BaseButton>
     </header>
+
+    <section v-if="consumption.length" class="mb-6 grid grid-cols-2 gap-3">
+        <AppCard tone="muted" class="text-center">
+            <span class="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-card text-brand-500">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9v3"
+                    />
+                </svg>
+            </span>
+            <p class="mt-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">Presupuesto total</p>
+            <p class="amount mt-1 truncate text-lg font-bold text-ink">{{ totals.budgeted }}</p>
+        </AppCard>
+        <AppCard tone="muted" class="text-center">
+            <span class="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-card text-accent-500">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22M21.75 9V4.5m0 0h-4.5"
+                    />
+                </svg>
+            </span>
+            <p class="mt-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">Gasto mensual</p>
+            <p class="amount mt-1 truncate text-lg font-bold text-ink">{{ totals.spent }}</p>
+        </AppCard>
+    </section>
+
+    <h2 class="mb-3 text-lg font-bold text-ink">Gastos por categoría</h2>
 
     <ul v-if="consumption.length" class="space-y-3">
         <li v-for="row in consumption" :key="row.budgetId">
-            <AppCard class="cursor-pointer transition-colors active:bg-slate-50 dark:active:bg-slate-800/50" @click="drilldown.show(row.category.id)">
-                <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-200">
-                        <span v-if="row.category.icon" class="shrink-0">{{ row.category.icon }}</span>
-                        <span class="truncate">{{ row.category.name }}</span>
+            <AppCard
+                tone="muted"
+                class="cursor-pointer transition-opacity active:opacity-70"
+                @click="drilldown.show(row.category.id)"
+            >
+                <div class="flex items-start gap-3">
+                    <span
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-base text-white"
+                        :style="{ backgroundColor: row.category.color || '#3c5e4d' }"
+                    >
+                        {{ row.category.icon || '•' }}
                     </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-bold text-ink">{{ row.category.name }}</p>
+                        <p class="amount truncate text-xs text-ink-soft">
+                            {{ row.spent.formatted }} de {{ row.budgeted.formatted }}
+                        </p>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <p class="amount text-sm font-bold" :class="row.isOverBudget ? 'text-neg' : 'text-ink'">
+                            {{ row.remaining.formatted.replace('-', '−') }}
+                        </p>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-ink-faint">restante</p>
+                    </div>
                     <button
                         type="button"
-                        class="shrink-0 rounded-full p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:text-slate-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+                        class="-mr-1 shrink-0 rounded-full p-1 text-ink-faint transition-colors hover:bg-neg-soft hover:text-neg"
                         aria-label="Eliminar presupuesto"
                         @click.stop="deleting = row"
                     >
@@ -74,15 +135,26 @@ const confirmDelete = () => {
                     </button>
                 </div>
 
-                <ProgressBar :percentage="row.percentage" :bar-class="barClass(row)" />
-                <div class="mt-2 flex items-center justify-between text-xs">
-                    <span :class="row.isOverBudget ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'">
-                        {{ row.spent.formatted }} de {{ row.budgeted.formatted }}
-                    </span>
-                    <span class="text-slate-400 dark:text-slate-500">{{ row.percentage }}%</span>
+                <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-card">
+                    <div
+                        class="h-full rounded-full transition-all duration-500"
+                        :class="barClass(row)"
+                        :style="{ width: `${Math.min(100, row.percentage)}%` }"
+                    />
                 </div>
-                <p v-if="row.isOverBudget" class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">
-                    Excedido por {{ row.remaining.formatted.replace('-', '') }}
+
+                <p
+                    v-if="row.isOverBudget"
+                    class="mt-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-neg"
+                >
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    Límite alcanzado
                 </p>
             </AppCard>
         </li>

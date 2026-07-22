@@ -53,7 +53,7 @@ const confirmDelete = () => {
     <Head title="Cuentas" />
 
     <header class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Cuentas</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">Cuentas</h1>
         <BaseButton size="sm" @click="openCreate">Nueva</BaseButton>
     </header>
 
@@ -61,19 +61,19 @@ const confirmDelete = () => {
         <li
             v-for="account in accounts"
             :key="account.id"
-            class="flex cursor-pointer items-center gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 transition-colors active:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:active:bg-slate-800"
+            class="flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl bg-card p-4 transition-colors active:bg-muted"
             @click="openEdit(account)"
         >
             <span class="h-10 w-1.5 shrink-0 rounded-full" :style="{ backgroundColor: account.color || '#4f46e5' }" />
             <div class="min-w-0 flex-1">
-                <p class="truncate font-medium text-slate-800 dark:text-slate-200">{{ account.name }}</p>
-                <p class="text-xs text-slate-400 dark:text-slate-500">{{ account.typeLabel }} · {{ account.currency }}</p>
+                <p class="truncate font-medium text-ink">{{ account.name }}</p>
+                <p class="text-xs text-ink-faint">{{ account.typeLabel }} · {{ account.currency }}</p>
             </div>
             <div class="shrink-0 text-right">
-                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ account.currentBalance.formatted }}</p>
+                <p class="amount font-bold text-ink">{{ account.currentBalance.formatted }}</p>
                 <button
                     type="button"
-                    class="text-xs font-medium text-rose-500 dark:text-rose-400"
+                    class="text-xs font-medium text-neg"
                     @click.stop="deleting = account"
                 >
                     Eliminar
@@ -84,23 +84,23 @@ const confirmDelete = () => {
     <EmptyState v-else message="Creá tu primera cuenta para empezar." />
 
     <section v-if="archivedAccounts.length" class="mt-8">
-        <h2 class="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Archivadas</h2>
+        <h2 class="mb-3 text-sm font-semibold text-ink-soft">Archivadas</h2>
         <ul class="space-y-3">
             <li
                 v-for="account in archivedAccounts"
                 :key="account.id"
-                class="flex items-center gap-3 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
+                class="flex items-center gap-3 overflow-hidden rounded-2xl border border-dashed border-line bg-muted p-4 dark:bg-card/50"
             >
                 <span class="h-10 w-1.5 shrink-0 rounded-full opacity-50" :style="{ backgroundColor: account.color || '#4f46e5' }" />
                 <div class="min-w-0 flex-1">
-                    <p class="truncate font-medium text-slate-600 dark:text-slate-300">{{ account.name }}</p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ account.typeLabel }} · {{ account.currency }} · archivada</p>
+                    <p class="truncate font-medium text-ink-soft">{{ account.name }}</p>
+                    <p class="text-xs text-ink-faint">{{ account.typeLabel }} · {{ account.currency }} · archivada</p>
                 </div>
                 <div class="shrink-0 text-right">
-                    <p class="font-semibold text-slate-500 dark:text-slate-400">{{ account.currentBalance.formatted }}</p>
+                    <p class="font-semibold text-ink-soft">{{ account.currentBalance.formatted }}</p>
                     <button
                         type="button"
-                        class="text-xs font-medium text-indigo-600 dark:text-indigo-400"
+                        class="text-xs font-medium text-brand-500"
                         @click="restore(account)"
                     >
                         Restaurar
@@ -108,7 +108,7 @@ const confirmDelete = () => {
                 </div>
             </li>
         </ul>
-        <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+        <p class="mt-2 text-xs text-ink-faint">
             Las cuentas archivadas conservan su historial y no se pueden editar. Restáuralas para volver a usarlas.
         </p>
     </section>

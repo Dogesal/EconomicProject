@@ -5,7 +5,85 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/*
+ * Design system (mockup Visily "multiscreens"): verde profundo como marca,
+ * acentos cian / lila / ámbar para categorías y acciones, superficies planas
+ * sin bordes duros. Los tokens semánticos (`surface`, `card`, `ink`, `pos`,
+ * `neg`…) apuntan a variables CSS que cambian con `.dark`, así las utilidades
+ * `bg-card` / `text-ink` funcionan en ambos temas sin variante `dark:`.
+ */
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+    --color-brand-50: #eef3f0;
+    --color-brand-100: #d8e4dd;
+    --color-brand-200: #b3c8bc;
+    --color-brand-300: #8aa898;
+    --color-brand-400: #5d8570;
+    --color-brand-500: #3c5e4d;
+    --color-brand-600: #33513f;
+    --color-brand-700: #2a4335;
+    --color-brand-900: #17251d;
+
+    --color-accent-50: #e6f6fb;
+    --color-accent-100: #cbeaf5;
+    --color-accent-500: #00a3ce;
+    --color-accent-600: #0089ad;
+
+    --color-lilac-100: #ece4fb;
+    --color-lilac-500: #aa8ddf;
+    --color-lilac-600: #8f6fcb;
+
+    --color-gold-100: #f7ecd7;
+    --color-gold-500: #d7a54e;
+    --color-gold-600: #bb8a36;
+
+    --color-surface: var(--surface);
+    --color-card: var(--card);
+    --color-muted: var(--muted);
+    --color-line: var(--line);
+    --color-ink: var(--ink);
+    --color-ink-soft: var(--ink-soft);
+    --color-ink-faint: var(--ink-faint);
+    --color-pos: var(--pos);
+    --color-pos-soft: var(--pos-soft);
+    --color-neg: var(--neg);
+    --color-neg-soft: var(--neg-soft);
+}
+
+:root {
+    --surface: #f6f7f9;
+    --card: #ffffff;
+    --muted: #eaebed;
+    --line: #e4e5e9;
+    --ink: #181a1c;
+    --ink-soft: #5b6167;
+    --ink-faint: #8b9198;
+    --pos: #2f7a55;
+    --pos-soft: #e4f2ea;
+    --neg: #cf4a22;
+    --neg-soft: #fbe8e1;
+}
+
+.dark {
+    --surface: #1e1f23;
+    --card: #26272c;
+    --muted: #2b2b30;
+    --line: #34353b;
+    --ink: #f2f3f5;
+    --ink-soft: #a2a8b0;
+    --ink-faint: #7c828a;
+    --pos: #68b98c;
+    --pos-soft: rgb(104 185 140 / 0.14);
+    --neg: #e2683f;
+    --neg-soft: rgb(226 104 63 / 0.14);
+}
+
+/** Importes y saldos: monoespaciado con cifras de ancho fijo, como el mockup. */
+.amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
 }

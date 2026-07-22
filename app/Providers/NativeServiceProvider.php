@@ -5,6 +5,7 @@ namespace App\Providers;
 use Codingwithrk\DoubleBackToClose\DoubleBackToCloseServiceProvider;
 use Codingwithrk\DoubleBackToClose\Facades\DoubleBackToClose;
 use Economia\MobileBiometrics\MobileBiometricsServiceProvider;
+use Economia\VoiceWidget\VoiceWidgetServiceProvider;
 use Economia\WebViewFileChooser\WebViewFileChooserServiceProvider;
 use Economia\WhatsAppBackgroundSync\WhatsAppBackgroundSyncServiceProvider;
 use Ikromjon\LocalNotifications\LocalNotificationsServiceProvider;
@@ -59,7 +60,7 @@ class NativeServiceProvider extends ServiceProvider
             BrowserServiceProvider::class,
             WebViewFileChooserServiceProvider::class,
             WhatsAppBackgroundSyncServiceProvider::class,
-
+            VoiceWidgetServiceProvider::class,
         ];
     }
 }

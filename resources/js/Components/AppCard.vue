@@ -1,11 +1,16 @@
 <script setup>
 defineProps({
     padded: { type: Boolean, default: true },
+    /** `card` = superficie elevada; `muted` = bloque gris plano del mockup. */
+    tone: { type: String, default: 'card' },
 });
 </script>
 
 <template>
-    <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" :class="padded ? 'p-4' : ''">
+    <div
+        class="rounded-2xl"
+        :class="[tone === 'muted' ? 'bg-muted' : 'bg-card shadow-sm shadow-black/5', padded ? 'p-4' : '']"
+    >
         <slot />
     </div>
 </template>

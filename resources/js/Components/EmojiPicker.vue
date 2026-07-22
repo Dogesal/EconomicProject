@@ -34,12 +34,10 @@ const select = (emoji) => {
                 v-for="emoji in emojis"
                 :key="emoji"
                 type="button"
-                class="flex h-9 items-center justify-center rounded-lg text-lg transition-colors"
-                :class="
-                    model === emoji
-                        ? 'bg-indigo-100 ring-2 ring-indigo-500 dark:bg-indigo-500/20 dark:ring-indigo-400'
-                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700'
-                "
+                class="flex h-9 items-center justify-center rounded-xl text-lg transition-colors"
+                :class="model === emoji
+                        ? 'bg-brand-100 ring-2 ring-brand-500 /20 dark:ring-brand-400'
+                        : 'bg-muted hover:bg-muted dark:hover:bg-line'"
                 @click="select(emoji)"
             >
                 {{ emoji }}
@@ -48,7 +46,7 @@ const select = (emoji) => {
 
         <button
             type="button"
-            class="mt-2 text-xs font-medium text-indigo-600 dark:text-indigo-400"
+            class="mt-2 text-xs font-medium text-brand-500"
             @click="showCustom = !showCustom"
         >
             {{ showCustom ? 'Ocultar' : '¿Otro? Usá el teclado de tu celu' }}
@@ -62,7 +60,7 @@ const select = (emoji) => {
                 placeholder="🦄"
                 class="w-20 text-center text-lg"
             />
-            <span class="text-xs text-slate-400 dark:text-slate-500">Tocá y elegí cualquier emoji del teclado.</span>
+            <span class="text-xs text-ink-faint">Tocá y elegí cualquier emoji del teclado.</span>
         </div>
     </div>
 </template>

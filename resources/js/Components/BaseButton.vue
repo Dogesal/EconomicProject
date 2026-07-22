@@ -11,20 +11,19 @@ const props = defineProps({
 });
 
 const variantClasses = {
-    primary: 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 active:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400',
-    secondary:
-        'bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700',
-    danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-500 active:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400',
-    ghost: 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200',
+    primary: 'bg-brand-500 text-white shadow-sm shadow-brand-500/25 hover:bg-brand-600 active:bg-brand-700',
+    secondary: 'bg-muted text-ink hover:bg-line active:bg-line',
+    danger: 'bg-neg text-white shadow-sm hover:brightness-110 active:brightness-95',
+    ghost: 'text-ink-soft hover:bg-muted hover:text-ink',
 };
 
 const sizeClasses = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
+    sm: 'px-3.5 py-2 text-xs',
+    md: 'px-5 py-2.5 text-sm',
 };
 
 const classes = computed(() => [
-    'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50',
+    'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
     variantClasses[props.variant],
     sizeClasses[props.size],
     props.block ? 'w-full' : '',

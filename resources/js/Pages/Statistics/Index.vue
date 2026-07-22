@@ -24,29 +24,29 @@ const periodLabel = computed(() => `${MONTHS[props.period.month]} ${props.period
     <Head title="Estadísticas" />
 
     <header class="mb-4">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Estadísticas</h1>
-        <p class="text-xs text-slate-400 dark:text-slate-500">{{ periodLabel }}</p>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">Estadísticas</h1>
+        <p class="text-xs text-ink-faint">{{ periodLabel }}</p>
     </header>
 
     <SectionTabs :tabs="[{ label: 'Reportes', href: '/reports' }, { label: 'Estadísticas', href: '/statistics' }]" />
 
     <section class="mb-6">
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Resumen del mes</h2>
+        <h2 class="mb-2 text-lg font-bold text-ink">Resumen del mes</h2>
         <MonthOverviewCard :overview="overview" />
     </section>
 
     <section class="mb-6">
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recomendaciones</h2>
+        <h2 class="mb-2 text-lg font-bold text-ink">Recomendaciones</h2>
         <RecommendationsList :recommendations="recommendations" />
     </section>
 
     <section class="mb-6">
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Top gastos y hábitos</h2>
+        <h2 class="mb-2 text-lg font-bold text-ink">Top gastos y hábitos</h2>
         <TopExpensesCard :habits="habits" />
     </section>
 
     <section>
-        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tendencia (6 meses)</h2>
+        <h2 class="mb-2 text-lg font-bold text-ink">Tendencia (6 meses)</h2>
         <TrendSection :trend="trend" />
     </section>
 </template>

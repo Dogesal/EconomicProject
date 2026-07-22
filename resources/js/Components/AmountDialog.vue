@@ -53,9 +53,9 @@ const submit = () => {
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
         >
-            <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6 dark:bg-black/60" @click.self="emit('cancel')">
-                <form class="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" @submit.prevent="submit">
-                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
+            <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" @click.self="emit('cancel')">
+                <form class="w-full max-w-xs rounded-2xl bg-card p-5 shadow-2xl dark:bg-card" role="dialog" aria-modal="true" @submit.prevent="submit">
+                    <h2 class="text-base font-semibold text-ink">{{ title }}</h2>
                     <div class="mt-3">
                         <FormField :label="currency ? `Monto (${currency})` : 'Monto'" :error="error" :hint="maxHint">
                             <div class="flex gap-2">
@@ -74,7 +74,7 @@ const submit = () => {
                                 </BaseButton>
                             </div>
                         </FormField>
-                        <p v-if="max !== null && amount !== '' && Number(amount) > max" class="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                        <p v-if="max !== null && amount !== '' && Number(amount) > max" class="mt-1 text-xs text-neg">
                             El máximo es {{ max }}.
                         </p>
                     </div>

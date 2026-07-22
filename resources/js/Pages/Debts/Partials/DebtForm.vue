@@ -16,8 +16,8 @@ const form = useForm({
 });
 
 const directionOptions = [
-    { value: 'i_owe', label: 'Debo', activeClass: 'text-rose-600 dark:text-rose-400' },
-    { value: 'owed_to_me', label: 'Me deben', activeClass: 'text-emerald-600 dark:text-emerald-400' },
+    { value: 'i_owe', label: 'Debo', activeClass: 'text-neg' },
+    { value: 'owed_to_me', label: 'Me deben', activeClass: 'text-pos' },
 ];
 
 const submit = () => {

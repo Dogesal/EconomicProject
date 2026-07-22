@@ -79,6 +79,26 @@ class WebhookServerClient
         $this->authenticated()->delete('/api/devices/me/link')->throw();
     }
 
+    /**
+     * Envía el texto transcrito por voz. Timeout largo a propósito: el
+     * servidor interpreta con el LLM dentro del request y puede tardar
+     * varios segundos; aquí el usuario está esperando la respuesta.
+     *
+     * @return array{reply: string, message_created: bool}
+     */
+    public function sendVoiceNote(string $text, string $clientMessageId): array
+    {
+        return $this->authenticated()
+            ->connectTimeout(5)
+            ->timeout(30)
+            ->post('/api/voice-notes', [
+                'text' => $text,
+                'client_message_id' => $clientMessageId,
+            ])
+            ->throw()
+            ->json();
+    }
+
     private function request(): PendingRequest
     {
         return Http::baseUrl((string) config('services.whatsapp_sync.url'))

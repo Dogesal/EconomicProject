@@ -55,15 +55,15 @@ onMounted(() => {
 <template>
     <Head title="Bloqueado" />
 
-    <div class="flex min-h-dvh flex-col items-center justify-center bg-slate-900 px-6 text-center text-white">
-        <div class="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-600/20">
-            <svg class="h-10 w-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+    <div class="flex min-h-dvh flex-col items-center justify-center bg-brand-900 px-6 text-center text-white">
+        <div class="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-500/20">
+            <svg class="h-10 w-10 text-brand-400" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 0h10.5a1.5 1.5 0 011.5 1.5v6a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5v-6a1.5 1.5 0 011.5-1.5z" />
             </svg>
         </div>
 
         <h1 class="text-xl font-bold">{{ appName }}</h1>
-        <p class="mt-1 text-sm text-slate-400">Ingresá tu PIN o usá tu huella para continuar.</p>
+        <p class="mt-1 text-sm text-brand-100/80">Ingresá tu PIN o usá tu huella para continuar.</p>
 
         <form class="mt-8 w-full max-w-xs" @submit.prevent="unlockWithPin">
             <input
@@ -74,13 +74,13 @@ onMounted(() => {
                 maxlength="6"
                 autocomplete="off"
                 placeholder="PIN"
-                class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-center text-lg tracking-[0.5em] text-white placeholder:tracking-normal placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                class="w-full rounded-2xl border border-brand-700 bg-brand-700/40 px-4 py-3 text-center text-lg tracking-[0.5em] text-white placeholder:tracking-normal placeholder:text-brand-100/50 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             />
-            <p v-if="pinForm.errors.pin" class="mt-2 text-sm text-rose-400">{{ pinForm.errors.pin }}</p>
+            <p v-if="pinForm.errors.pin" class="mt-2 text-sm text-neg">{{ pinForm.errors.pin }}</p>
 
             <button
                 type="submit"
-                class="mt-3 w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-60"
+                class="mt-3 w-full rounded-2xl bg-brand-500 py-3 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-60"
                 :disabled="pinForm.processing || pinForm.pin.length < 4"
             >
                 {{ pinForm.processing ? 'Verificando…' : 'Entrar' }}
@@ -88,19 +88,19 @@ onMounted(() => {
         </form>
 
         <button
-            class="mt-4 flex w-full max-w-xs items-center justify-center gap-2 rounded-xl border border-slate-700 py-3 text-sm font-semibold text-slate-200 transition active:scale-95 disabled:opacity-60"
+            class="mt-4 flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl border border-brand-700 py-3 text-sm font-semibold text-brand-100 transition active:scale-95 disabled:opacity-60"
             :disabled="biometricLoading"
             @click="unlockWithBiometrics"
         >
-            <svg class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+            <svg class="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.9 8.6a5 5 0 018.2 0M6 12a6.7 6.7 0 0112 0c0 2.5-.6 4.9-1.7 7M9.3 12a3.4 3.4 0 016.7 0c0 2-.4 3.9-1.2 5.6M12 12v2.8" />
             </svg>
             {{ biometricLoading ? 'Verificando huella…' : 'Usar huella' }}
         </button>
 
         <div v-if="biometricFailed" class="mt-4">
-            <p class="text-sm text-rose-400">No se pudo verificar la huella. Usá tu PIN.</p>
-            <p v-if="biometricReason" class="mt-1 text-xs text-slate-500">({{ biometricReason }})</p>
+            <p class="text-sm text-neg">No se pudo verificar la huella. Usá tu PIN.</p>
+            <p v-if="biometricReason" class="mt-1 text-xs text-ink-soft">({{ biometricReason }})</p>
         </div>
     </div>
 </template>

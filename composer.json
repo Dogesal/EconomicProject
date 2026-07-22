@@ -9,6 +9,7 @@
         "php": "^8.3",
         "codingwithrk/double-back-to-close": "^1.0",
         "economia/mobile-biometrics": "*@dev",
+        "economia/voice-widget": "*@dev",
         "economia/webview-file-chooser": "*@dev",
         "economia/whatsapp-background-sync": "*@dev",
         "ikromjon/nativephp-mobile-local-notifications": "^1.9",

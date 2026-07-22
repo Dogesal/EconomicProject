@@ -12,20 +12,13 @@ const currentPath = computed(() => new URL(page.props.ziggy?.location ?? window.
 </script>
 
 <template>
-    <nav
-        class="mb-4 grid gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800"
-        :style="{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }"
-    >
+    <nav class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link
             v-for="tab in tabs"
             :key="tab.href"
             :href="tab.href"
-            class="rounded-md py-1.5 text-center text-sm font-medium transition-colors"
-            :class="
-                currentPath.startsWith(tab.href)
-                    ? 'bg-white text-indigo-600 shadow dark:bg-slate-900 dark:text-indigo-400'
-                    : 'text-slate-500 dark:text-slate-400'
-            "
+            class="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            :class="currentPath.startsWith(tab.href) ? 'bg-brand-500 text-white' : 'bg-card text-ink-soft ring-1 ring-line'"
         >
             {{ tab.label }}
         </Link>

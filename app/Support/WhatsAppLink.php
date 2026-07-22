@@ -30,6 +30,16 @@ class WhatsAppLink
         return Setting::get(self::LINKED_KEY) === '1' && $this->apiToken() !== null;
     }
 
+    /**
+     * El dispositivo tiene credenciales contra el servidor. Basta para el
+     * registro por voz y para bajar sus pendientes: vincular un teléfono
+     * de WhatsApp solo hace falta para hablarle al bot por WhatsApp.
+     */
+    public function isRegistered(): bool
+    {
+        return $this->apiToken() !== null;
+    }
+
     public function deviceId(): ?string
     {
         return Setting::get(self::DEVICE_ID_KEY);

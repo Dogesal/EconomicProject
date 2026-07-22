@@ -21,10 +21,10 @@ const emit = defineEmits(['confirm', 'cancel']);
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
         >
-            <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6 dark:bg-black/60" @click.self="emit('cancel')">
-                <div class="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900" role="alertdialog" aria-modal="true">
-                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
-                    <p v-if="message" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ message }}</p>
+            <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" @click.self="emit('cancel')">
+                <div class="w-full max-w-xs rounded-3xl bg-card p-5 shadow-2xl" role="alertdialog" aria-modal="true">
+                    <h2 class="text-base font-bold text-ink">{{ title }}</h2>
+                    <p v-if="message" class="mt-1 text-sm text-ink-soft">{{ message }}</p>
                     <div class="mt-4 grid grid-cols-2 gap-2">
                         <BaseButton variant="secondary" @click="emit('cancel')">{{ cancelLabel }}</BaseButton>
                         <BaseButton variant="danger" :processing="processing" @click="emit('confirm')">{{ confirmLabel }}</BaseButton>

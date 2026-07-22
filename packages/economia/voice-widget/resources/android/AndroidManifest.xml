@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fragmento que el compilador de plugins de NativePHP hace merge con el
+    manifest de la app. El receiver del widget debe ser exported (lo invoca
+    el launcher); la activity no (solo la lanza el PendingIntent del widget,
+    que ejecuta con la identidad de la app).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="com.economia.voicewidget.VoiceWidgetProvider"
+            android:exported="true"
+            android:label="Mi Economía · Voz">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/voice_widget_info" />
+        </receiver>
+        <!--
+            OJO: sin launchMode singleInstance/singleTask — rompen
+            startActivityForResult (el resultado llega RESULT_CANCELED al
+            instante y el texto transcrito se pierde en silencio).
+        -->
+        <activity
+            android:name="com.economia.voicewidget.VoiceCaptureActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" />
+    </application>
+</manifest>

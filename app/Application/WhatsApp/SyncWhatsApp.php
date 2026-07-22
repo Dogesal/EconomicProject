@@ -38,7 +38,7 @@ class SyncWhatsApp
      */
     public function handle(bool $force = false): void
     {
-        if (! $this->link->isConfigured() || ! $this->link->isLinked()) {
+        if (! $this->link->isConfigured() || ! $this->link->isRegistered()) {
             return;
         }
 

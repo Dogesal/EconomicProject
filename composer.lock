@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ee54de7308cc23e1b4c296437f09f98f",
+    "content-hash": "0fcd7c486e1efda8a662a90c6e2b0b89",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -679,6 +679,41 @@
                 "MIT"
             ],
             "description": "Plugin de autenticación biométrica (BiometricPrompt) para Mi Economía",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "economia/voice-widget",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "packages/economia/voice-widget",
+                "reference": "41d63bba3a53fe6f8996cebadaa028a0bbb4e7a2"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Economia\\VoiceWidget\\VoiceWidgetServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Economia\\VoiceWidget\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Widget de pantalla de inicio con micrófono: transcribe la voz y registra el movimiento vía el servidor LLM para Mi Economía",
             "transport-options": {
                 "relative": true
             }
@@ -10556,6 +10591,7 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "economia/mobile-biometrics": 20,
+        "economia/voice-widget": 20,
         "economia/webview-file-chooser": 20,
         "economia/whatsapp-background-sync": 20
     },

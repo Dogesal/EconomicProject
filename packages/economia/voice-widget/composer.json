@@ -1,0 +1,25 @@
+{
+    "name": "economia/voice-widget",
+    "description": "Widget de pantalla de inicio con micrófono: transcribe la voz y registra el movimiento vía el servidor LLM para Mi Economía",
+    "type": "nativephp-plugin",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Economia\\VoiceWidget\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Economia\\VoiceWidget\\VoiceWidgetServiceProvider"
+            ]
+        },
+        "nativephp": {
+            "manifest": "nativephp.json"
+        }
+    },
+    "minimum-stability": "stable"
+}

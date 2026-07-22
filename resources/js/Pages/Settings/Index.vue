@@ -87,10 +87,36 @@ const onRestorePicked = (event) => {
     }
 };
 
-const doRestore = () => {
+// El puente nativo aplana los FormData a texto, así que el respaldo viaja como
+// base64 dentro del cuerpo JSON en lugar de como archivo multipart.
+const readAsBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',').pop());
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+});
+
+const doRestore = async () => {
+    const file = restoreFile.value;
+
+    if (!file) {
+        return;
+    }
+
     restoring.value = true;
-    router.post('/settings/backup/restore', { backup: restoreFile.value }, {
-        forceFormData: true,
+
+    let payload;
+
+    try {
+        payload = await readAsBase64(file);
+    } catch {
+        restoring.value = false;
+        restoreFile.value = null;
+
+        return;
+    }
+
+    router.post('/settings/backup/restore', { backup_base64: payload, backup_name: file.name }, {
         preserveScroll: true,
         onFinish: () => {
             restoring.value = false;
@@ -154,12 +180,12 @@ const confirmCategoryDelete = () => {
     <Head title="Ajustes" />
 
     <header class="mb-4">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Ajustes</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-ink">Ajustes</h1>
     </header>
 
     <AppCard class="mb-4">
-        <h2 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Moneda de visualización</h2>
-        <p class="mb-3 text-xs text-slate-400 dark:text-slate-500">
+        <h2 class="mb-2 text-sm font-semibold text-ink-soft">Moneda de visualización</h2>
+        <p class="mb-3 text-xs text-ink-faint">
             Los totales del inicio se convierten a esta moneda cuando hay tasa de cambio.
         </p>
         <div class="flex gap-2">
@@ -171,8 +197,8 @@ const confirmCategoryDelete = () => {
     </AppCard>
 
     <AppCard class="mb-4">
-        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Tema</h2>
-        <p class="mb-3 mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+        <h2 class="text-sm font-semibold text-ink-soft">Tema</h2>
+        <p class="mb-3 mt-0.5 text-xs text-ink-faint">
             Con “Sistema” la app sigue el modo claro/oscuro del celular.
         </p>
         <SegmentedControl v-model="theme" :options="themeOptions" />
@@ -181,15 +207,15 @@ const confirmCategoryDelete = () => {
     <AppCard class="mb-4">
         <div class="flex items-center justify-between gap-4">
             <div>
-                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Bloqueo de la app</h2>
-                <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Pedir huella o PIN al abrir la app.</p>
+                <h2 class="text-sm font-semibold text-ink-soft">Bloqueo de la app</h2>
+                <p class="mt-0.5 text-xs text-ink-faint">Pedir huella o PIN al abrir la app.</p>
             </div>
             <ToggleSwitch v-model="lockEnabled" />
         </div>
-        <div class="mt-3 flex items-center justify-between gap-4 border-t border-slate-100 pt-3 dark:border-slate-800">
-            <p class="text-xs text-slate-400 dark:text-slate-500">
+        <div class="mt-3 flex items-center justify-between gap-4 border-t border-line pt-3">
+            <p class="text-xs text-ink-faint">
                 PIN de respaldo:
-                <span :class="appLockHasPin ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'font-medium text-amber-600 dark:text-amber-400'">
+                <span :class="appLockHasPin ? 'font-medium text-pos' : 'font-medium text-gold-600'">
                     {{ appLockHasPin ? 'configurado' : 'sin configurar' }}
                 </span>
             </p>
@@ -202,8 +228,8 @@ const confirmCategoryDelete = () => {
     <WhatsAppCard :whatsapp="whatsapp" />
 
     <AppCard class="mb-6">
-        <h2 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Respaldo</h2>
-        <p class="mb-3 text-xs text-slate-400 dark:text-slate-500">Guardá o enviá una copia de todos tus datos (archivo SQLite).</p>
+        <h2 class="mb-2 text-sm font-semibold text-ink-soft">Respaldo</h2>
+        <p class="mb-3 text-xs text-ink-faint">Guardá o enviá una copia de todos tus datos (archivo SQLite).</p>
         <div class="flex flex-wrap gap-2">
             <!-- El webview nativo ignora respuestas de descarga, así que el
                  respaldo sale por el share sheet (guardar/enviar). -->
@@ -215,7 +241,7 @@ const confirmCategoryDelete = () => {
 
     <section class="mb-6">
         <div class="mb-2 flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Categorías</h2>
+            <h2 class="text-sm font-semibold text-ink-soft">Categorías</h2>
             <BaseButton size="sm" @click="openCategoryCreate">Nueva</BaseButton>
         </div>
 
@@ -226,16 +252,16 @@ const confirmCategoryDelete = () => {
             ]" :key="group.label">
                 <p
                     v-if="group.items.length"
-                    class="bg-slate-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800/60 dark:text-slate-500"
-                    :class="index > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''"
+                    class="bg-muted px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:bg-card/60 dark:text-ink-soft"
+                    :class="index > 0 ? 'border-t border-line' : ''"
                 >
                     {{ group.label }}
                 </p>
-                <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+                <ul class="divide-y divide-line">
                     <li
                         v-for="category in group.items"
                         :key="category.id"
-                        class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors active:bg-slate-50 dark:active:bg-slate-800"
+                        class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors active:bg-muted"
                         @click="openCategoryEdit(category)"
                     >
                         <span
@@ -244,12 +270,12 @@ const confirmCategoryDelete = () => {
                         >
                             {{ category.icon || '●' }}
                         </span>
-                        <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                        <span class="min-w-0 flex-1 truncate text-sm font-medium text-ink">
                             {{ category.name }}
                         </span>
                         <button
                             type="button"
-                            class="shrink-0 rounded-full p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:text-slate-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+                            class="shrink-0 rounded-full p-1.5 text-ink-faint transition-colors hover:bg-neg-soft hover:text-neg dark:text-ink-soft dark:hover:bg-neg/10 dark:hover:text-neg"
                             aria-label="Eliminar categoría"
                             @click.stop="deletingCategory = category"
                         >
@@ -266,7 +292,7 @@ const confirmCategoryDelete = () => {
 
     <section>
         <div class="mb-2 flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Transacciones recurrentes</h2>
+            <h2 class="text-sm font-semibold text-ink-soft">Transacciones recurrentes</h2>
             <BaseButton size="sm" :disabled="!accounts.length" @click="sheetOpen = true">Nueva</BaseButton>
         </div>
 

@@ -102,6 +102,34 @@ class BackupRestoreTest extends TestCase
         $this->assertFileExists($target.'.pre-restore');
     }
 
+    public function test_restore_accepts_a_base64_payload_from_the_native_bridge(): void
+    {
+        $target = $this->useFileDatabase();
+
+        $response = $this->from('/settings')->post(route('settings.backup.restore'), [
+            'backup_base64' => base64_encode($this->validBackupContent(withMarker: true)),
+            'backup_name' => 'backup.sqlite',
+        ]);
+
+        $response->assertSessionHas('success', 'Respaldo restaurado: tus datos fueron reemplazados.');
+
+        $restored = new PDO('sqlite:'.$target);
+        $this->assertSame('si', $restored->query("SELECT value FROM settings WHERE key = 'restore_marker'")->fetchColumn());
+    }
+
+    public function test_restore_rejects_a_base64_payload_that_is_not_sqlite(): void
+    {
+        $target = $this->useFileDatabase();
+        $before = File::get($target);
+
+        $response = $this->from('/settings')->post(route('settings.backup.restore'), [
+            'backup_base64' => base64_encode('esto no es una base de datos'),
+        ]);
+
+        $response->assertSessionHas('error', 'El archivo no es un respaldo válido de Mi Economía.');
+        $this->assertSame($before, File::get($target));
+    }
+
     /**
      * Points the app at a freshly migrated on-disk SQLite database and
      * returns its path (the restore target).

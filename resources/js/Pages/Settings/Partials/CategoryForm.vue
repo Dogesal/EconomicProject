@@ -26,8 +26,8 @@ const form = useForm({
 });
 
 const typeOptions = [
-    { value: 'expense', label: 'Gasto', activeClass: 'text-rose-600 dark:text-rose-400' },
-    { value: 'income', label: 'Ingreso', activeClass: 'text-emerald-600 dark:text-emerald-400' },
+    { value: 'expense', label: 'Gasto', activeClass: 'text-neg' },
+    { value: 'income', label: 'Ingreso', activeClass: 'text-pos' },
 ];
 
 const submit = () => {
@@ -66,7 +66,7 @@ const submit = () => {
                     :key="color"
                     type="button"
                     class="h-8 w-8 rounded-full transition-transform"
-                    :class="form.color === color ? 'scale-110 ring-2 ring-slate-400 ring-offset-2 dark:ring-slate-500 dark:ring-offset-slate-900' : ''"
+                    :class="form.color === color ? 'scale-110 ring-2 ring-ink-faint ring-offset-2 ring-offset-card' : ''"
                     :style="{ backgroundColor: color }"
                     :aria-label="`Color ${color}`"
                     @click="form.color = color"

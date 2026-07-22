@@ -61,39 +61,93 @@ class BackupController extends Controller
     public function restore(Request $request): RedirectResponse
     {
         $upload = $request->file('backup');
+        $temporary = null;
 
-        if (! $upload instanceof UploadedFile || ! $upload->isValid()) {
-            return back()->with('error', 'Selecciona un archivo de respaldo.');
+        if ($upload instanceof UploadedFile && $upload->isValid()) {
+            if ($upload->getSize() > self::MAX_BACKUP_BYTES) {
+                return back()->with('error', 'El archivo es demasiado grande para ser un respaldo.');
+            }
+
+            $source = $upload->getRealPath();
+        } else {
+            // The Android webview bridge flattens multipart bodies to plain
+            // strings, so on device the app sends the bytes as base64 instead.
+            $payload = (string) $request->input('backup_base64');
+
+            if ($payload === '') {
+                return back()->with('error', 'Selecciona un archivo de respaldo.');
+            }
+
+            if (strlen($payload) > intdiv(self::MAX_BACKUP_BYTES, 3) * 4 + 4) {
+                return back()->with('error', 'El archivo es demasiado grande para ser un respaldo.');
+            }
+
+            $temporary = $this->decodeBase64Backup($payload);
+
+            if ($temporary === null) {
+                return back()->with('error', 'El archivo no es un respaldo válido de Mi Economía.');
+            }
+
+            $source = $temporary;
         }
 
-        if ($upload->getSize() > self::MAX_BACKUP_BYTES) {
-            return back()->with('error', 'El archivo es demasiado grande para ser un respaldo.');
+        try {
+            if (! $this->isValidBackup($source)) {
+                return back()->with('error', 'El archivo no es un respaldo válido de Mi Economía.');
+            }
+
+            $target = config('database.connections.sqlite.database');
+
+            if (! is_string($target) || $target === ':memory:') {
+                return back()->with('error', 'No se puede restaurar en esta instalación.');
+            }
+
+            if (file_exists($target)) {
+                File::copy($target, $target.'.pre-restore');
+            }
+
+            // Close the live connection and drop its WAL leftovers so the copy
+            // below can't be mixed with journal pages of the old database.
+            DB::purge();
+            File::delete([$target.'-wal', $target.'-shm']);
+
+            File::copy($source, $target);
+
+            Artisan::call('migrate', ['--force' => true]);
+
+            return back()->with('success', 'Respaldo restaurado: tus datos fueron reemplazados.');
+        } finally {
+            if ($temporary !== null) {
+                File::delete($temporary);
+            }
+        }
+    }
+
+    /**
+     * Writes a base64 (or data URL) payload to a temporary file and returns
+     * its path, or null when the payload isn't decodable.
+     */
+    private function decodeBase64Backup(string $payload): ?string
+    {
+        if (str_starts_with($payload, 'data:') && str_contains($payload, ',')) {
+            $payload = substr($payload, (int) strpos($payload, ',') + 1);
         }
 
-        if (! $this->isValidBackup($upload->getRealPath())) {
-            return back()->with('error', 'El archivo no es un respaldo válido de Mi Economía.');
+        $bytes = base64_decode(trim($payload), true);
+
+        if ($bytes === false || $bytes === '') {
+            return null;
         }
 
-        $target = config('database.connections.sqlite.database');
+        $path = tempnam(sys_get_temp_dir(), 'restore-');
 
-        if (! is_string($target) || $target === ':memory:') {
-            return back()->with('error', 'No se puede restaurar en esta instalación.');
+        if ($path === false) {
+            return null;
         }
 
-        if (file_exists($target)) {
-            File::copy($target, $target.'.pre-restore');
-        }
+        File::put($path, $bytes);
 
-        // Close the live connection and drop its WAL leftovers so the copy
-        // below can't be mixed with journal pages of the old database.
-        DB::purge();
-        File::delete([$target.'-wal', $target.'-shm']);
-
-        File::copy($upload->getRealPath(), $target);
-
-        Artisan::call('migrate', ['--force' => true]);
-
-        return back()->with('success', 'Respaldo restaurado: tus datos fueron reemplazados.');
+        return $path;
     }
 
     /**

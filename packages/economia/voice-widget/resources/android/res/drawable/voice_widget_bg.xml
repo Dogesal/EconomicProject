@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo redondeado con el color de marca (índigo del tema de la app). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="#6366F1"
+        android:endColor="#4F46E5"
+        android:angle="135" />
+    <corners android:radius="20dp" />
+</shape>

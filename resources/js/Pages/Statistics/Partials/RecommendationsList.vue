@@ -4,9 +4,9 @@ defineProps({
 });
 
 const SEVERITY_CLASSES = {
-    danger: 'border-rose-500 bg-rose-50/50 dark:bg-rose-500/5',
-    warning: 'border-amber-500 bg-amber-50/50 dark:bg-amber-500/5',
-    info: 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/5',
+    danger: 'border-neg bg-neg-soft/50 dark:bg-neg/5',
+    warning: 'border-gold-500 bg-gold-100/60',
+    info: 'border-brand-500 bg-brand-50/50 /5',
 };
 
 const SEVERITY_ICONS = {
@@ -16,9 +16,9 @@ const SEVERITY_ICONS = {
 };
 
 const SEVERITY_ICON_CLASSES = {
-    danger: 'text-rose-500 dark:text-rose-400',
-    warning: 'text-amber-500 dark:text-amber-400',
-    info: 'text-indigo-500 dark:text-indigo-400',
+    danger: 'text-neg',
+    warning: 'text-gold-600',
+    info: 'text-brand-500 ',
 };
 </script>
 
@@ -27,7 +27,7 @@ const SEVERITY_ICON_CLASSES = {
         <li
             v-for="(recommendation, index) in recommendations"
             :key="index"
-            class="flex gap-3 rounded-xl border border-slate-200 border-l-4 p-3 dark:border-slate-800"
+            class="flex gap-3 rounded-2xl border border-line border-l-4 p-3"
             :class="SEVERITY_CLASSES[recommendation.severity]"
         >
             <svg
@@ -41,12 +41,12 @@ const SEVERITY_ICON_CLASSES = {
                 <path stroke-linecap="round" stroke-linejoin="round" :d="SEVERITY_ICONS[recommendation.severity]" />
             </svg>
             <div class="min-w-0">
-                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ recommendation.title }}</p>
-                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ recommendation.message }}</p>
+                <p class="text-sm font-semibold text-ink">{{ recommendation.title }}</p>
+                <p class="mt-0.5 text-xs text-ink-soft">{{ recommendation.message }}</p>
             </div>
         </li>
     </ul>
-    <p v-else class="rounded-xl border border-slate-200 py-6 text-center text-sm text-slate-400 dark:border-slate-800 dark:text-slate-500">
+    <p v-else class="rounded-2xl border border-line py-6 text-center text-sm text-ink-faint dark:text-ink-soft">
         Sin recomendaciones este mes. ¡Todo en orden!
     </p>
 </template>

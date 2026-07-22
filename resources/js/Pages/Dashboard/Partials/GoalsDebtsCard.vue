@@ -17,44 +17,44 @@ const hasDebts = computed(
 <template>
     <section v-if="goals.length || hasDebts" class="mt-6">
         <div class="mb-2 flex items-center justify-between">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Metas y deudas</h2>
-            <Link href="/goals" class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Ver todo</Link>
+            <h2 class="text-lg font-bold text-ink">Metas y deudas</h2>
+            <Link href="/goals" class="text-sm font-semibold text-accent-500">Ver todo</Link>
         </div>
         <AppCard>
             <ul v-if="goals.length" class="space-y-3">
                 <li v-for="goal in goals" :key="goal.id">
                     <div class="mb-1 flex items-center justify-between gap-2 text-xs">
-                        <span class="truncate font-medium text-slate-700 dark:text-slate-300">{{ goal.name }}</span>
-                        <span class="shrink-0 text-slate-400 dark:text-slate-500">
+                        <span class="truncate font-medium text-ink-soft">{{ goal.name }}</span>
+                        <span class="shrink-0 text-ink-faint">
                             {{ goal.current.formatted }} de {{ goal.target.formatted }}
                         </span>
                     </div>
-                    <ProgressBar :percentage="goal.progress" bar-class="bg-indigo-500" />
+                    <ProgressBar :percentage="goal.progress" bar-class="bg-brand-500" />
                 </li>
             </ul>
 
             <div
                 v-if="hasDebts"
                 class="flex flex-wrap items-center gap-2"
-                :class="goals.length ? 'mt-3 border-t border-slate-100 pt-3 dark:border-slate-800' : ''"
+                :class="goals.length ? 'mt-3 border-t border-line pt-3 ' : ''"
             >
                 <span
                     v-for="total in debtSummary.iOwe"
                     :key="`iowe-${total.currency}`"
-                    class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
+                    class="rounded-full bg-neg-soft px-2.5 py-1 text-xs font-medium text-neg"
                 >
                     Debo {{ total.formatted }}
                 </span>
                 <span
                     v-for="total in debtSummary.owedToMe"
                     :key="`owed-${total.currency}`"
-                    class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+                    class="rounded-full bg-pos-soft px-2.5 py-1 text-xs font-medium text-pos"
                 >
                     Me deben {{ total.formatted }}
                 </span>
                 <span
                     v-if="debtSummary.overdueCount > 0"
-                    class="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-semibold text-white"
+                    class="rounded-full bg-neg px-2.5 py-1 text-xs font-semibold text-white"
                 >
                     {{ debtSummary.overdueCount }} vencida{{ debtSummary.overdueCount > 1 ? 's' : '' }}
                 </span>

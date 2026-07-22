@@ -8,11 +8,11 @@ defineProps({
 
 <template>
     <div>
-        <label class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ label }}</label>
+        <label class="text-xs font-medium text-ink-soft">{{ label }}</label>
         <div class="mt-1">
             <slot />
         </div>
-        <p v-if="error" class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ error }}</p>
-        <p v-else-if="hint" class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ hint }}</p>
+        <p v-if="error" class="mt-1 text-xs text-neg">{{ error }}</p>
+        <p v-else-if="hint" class="mt-1 text-xs text-ink-faint">{{ hint }}</p>
     </div>
 </template>
